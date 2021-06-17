@@ -1,0 +1,7 @@
+---
+- name: Configure Vault instance
+  hosts: localhost
+  vars_files: 
+    - vars/vault.yml
+  roles:
+    - vault

@@ -1,0 +1,72 @@
+- block:
+    - name: Create the bootstrap token
+      ansible.builtin.shell: consul acl bootstrap -format=json
+      register: token_resp
+      ignore_errors: true
+      run_once: true
+    - set_fact:
+        token: "{{ token_resp.stdout | from_json }}"
+      when: token_resp.stderr | length == 0
+    - name: Write root token
+      hashivault_secret:
+        secret:  "{{ vault.secrets.tokens.root }}"
+        data:
+          accessor: "{{ token.AccessorID }}"
+          secret: "{{ token.SecretID }}"
+      delegate_to: localhost
+      when: token_resp.stderr | length == 0
+  when: server
+- name: Read root token
+  hashivault_read:
+    secret: "{{ vault.secrets.tokens.root }}"
+    key: secret
+    version: 2
+  register: token
+  run_once: true
+  delegate_to: localhost
+- name: Create default agent policy
+  include_tasks: policy.yml
+  loop:
+    - name: "agent_{{ ansible_hostname }}"
+      desc: "Agent policy for {{ ansible_hostname }}"
+      rules:
+        - resource: agent
+          segment: "{{ ansible_hostname }}"
+          policy: write
+- name: Create ACL policies
+  include_tasks: policy.yml
+  loop: "{{ acl.policies }}"
+  when: server
+- name: Read node policies
+  set_fact:
+    policies: "{{ policies | default([]) + [{ 'Name': item }] }}"
+  with_items: "{{ hostvars[inventory_hostname]['consul_policies'] | from_json }}"
+- name: Create default node roles
+  include_tasks: roles.yml
+  loop:
+    - Name: "{{ ansible_hostname }}"
+      Description: "Default node role for {{ ansible_hostname }}"
+      Policies: "{{ policies | default([]) + [{ 'Name': 'agent_'~ansible_hostname }] }}"
+      NodeIdentities:
+        - NodeName: "{{ ansible_hostname }}"
+          Datacenter: "{{ config.datacenter }}"
+- name: Generate default tokens
+  include_tasks: token.yml
+- block:
+    - name: Read default token
+      hashivault_read:
+        secret: "{{ vault.secrets.tokens.base }}/{{ ansible_hostname }}"
+        key: secret
+        version: 2
+      register: default_token
+      delegate_to: localhost
+    - name: Apply default token
+      ansible.builtin.shell: |
+        consul acl set-agent-token \
+          default "{{ default_token.value }}"
+    - name: Apply agent token
+      ansible.builtin.shell: |
+        consul acl set-agent-token \
+          agent "{{ default_token.value }}"
+  environment:
+    CONSUL_HTTP_TOKEN: "{{ token.value }}"

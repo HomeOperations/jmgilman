@@ -1,0 +1,5 @@
+{% for rule in item.rules %}
+{{ rule.resource}} "{{ rule.segment }}" {
+    policy = "{{ rule.policy }}"
+}
+{% endfor %}

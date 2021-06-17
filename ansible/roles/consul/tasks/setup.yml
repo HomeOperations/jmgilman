@@ -1,0 +1,21 @@
+- name: Create service group
+  ansible.builtin.group:
+    name: "{{ service.group }}"
+    system: yes
+- name: Create service user
+  ansible.builtin.user:
+    name: "{{ service.user }}"
+    group: "{{ service.group }}"
+    system: yes
+- name: Create data directory
+  ansible.builtin.file:
+    path: "{{ path.dir.data }}"
+    state: directory
+    owner: "{{ service.user }}"
+    group: "{{ service.group }}"
+- name: Create configuration directory
+  ansible.builtin.file:
+    path: "{{ path.dir.config }}"
+    state: directory
+    owner: "{{ service.user }}"
+    group: "{{ service.group }}"

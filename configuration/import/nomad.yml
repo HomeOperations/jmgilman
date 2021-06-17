@@ -1,0 +1,32 @@
+import_path: nomad
+
+tls: true
+acl:
+  enabled: true
+  policies:
+    - name: anonymous
+      desc: Default anonymous policy
+      rules:
+        - resource: namespace
+          segment: "*"
+          policy: write
+          capabilities:
+            - alloc-node-exec
+        - resource: agent
+          policy: write
+        - resource: operator
+          policy: write
+        - resource: quota
+          policy: write
+        - resource: node
+          policy: write
+        - resource: host_volume
+          segment: "*"
+          policy: write
+config:
+  datacenter: gilman
+  region: global
+  bind_int: ens192
+  server:
+    verify_server_hostname: true
+    verify_https_client: false

@@ -1,0 +1,20 @@
+---
+consul: 
+  datacenter: "{{ lookup('community.general.consul_kv', 'consul/datacenter') }}"
+nomad:
+  region: "{{ lookup('community.general.consul_kv', 'nomad/region') }}"
+dns: "{{ lookup('community.general.consul_kv', 'network/dns') }}"
+pki:
+  roles:
+    - name: consul
+      mount: pki_int
+      data:
+        allowed_domains: "{{ consul.datacenter }}.consul, {{ dns.domain }}"
+        allow_subdomains: true
+        max_ttl: 2160h
+    - name: nomad
+      mount: pki_int
+      data:
+        allowed_domains: "{{ nomad.region }}.nomad, {{ dns.domain }}"
+        allow_subdomains: true
+        max_ttl: 2160h

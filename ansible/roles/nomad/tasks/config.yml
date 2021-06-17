@@ -1,0 +1,35 @@
+- name: Read gossip encryption key
+  hashivault_read:
+    secret: "{{ vault.secrets.gossip }}"
+    key: key
+    version: 2
+  register: gossip_read
+  run_once: true
+  delegate_to: localhost
+- name: Read default token
+  hashivault_read:
+    secret: "{{ consul.vault.secrets.tokens.base }}/{{ ansible_hostname }}"
+    key: secret
+    version: 2
+  register: token_read
+  delegate_to: localhost
+- name: Create server configuration
+  ansible.builtin.template:
+    src: files/server_config.j2
+    dest: "{{ path.config }}"
+    owner: "{{ service.user }}"
+    group: "{{ service.group }}"
+  vars:
+    key: "{{ gossip_read.value }}"
+    token: "{{ token_read.value }}"
+  when: server
+- name: Create client configuration
+  ansible.builtin.template:
+    src: files/client_config.j2
+    dest: "{{ path.config }}"
+    owner: "{{ service.user }}"
+    group: "{{ service.group }}"
+  vars:
+    key: "{{ gossip_read.value }}"
+    token: "{{ token_read.value }}"
+  when: not server

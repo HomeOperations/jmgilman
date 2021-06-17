@@ -1,0 +1,43 @@
+---
+- name: Configure vCenter
+  hosts: localhost
+  gather_facts: no
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: Create datacenter
+      community.vmware.vmware_datacenter:
+        datacenter_name: '{{ vcenter.datacenter }}'
+        state: present
+      delegate_to: localhost
+    - name: Create cluster
+      community.vmware.vmware_cluster:
+        datacenter_name: "{{ vcenter.datacenter }}"
+        cluster_name: "{{ vcenter.cluster.name }}"
+      delegate_to: localhost
+    - name: Enable EVC mode
+      community.vmware.vmware_evc_mode:
+         datacenter_name: "{{ vcenter.datacenter }}"
+         cluster_name: "{{ vcenter.cluster.name }}"
+         evc_mode: "{{ vcenter.cluster.evc_mode }}"
+         state: present
+      delegate_to: localhost
+    - name: Add other ESXi hosts to cluster
+      community.vmware.vmware_host:
+        datacenter: "{{ vcenter.datacenter }}"
+        cluster: "{{ vcenter.cluster.name }}"
+        esxi_hostname: "{{ item }}"
+        esxi_username: "{{ lookup('env', 'ESXI_ROOT_NAME') }}"
+        esxi_password: "{{ lookup('env', 'ESXI_ROOT_PASS') }}"
+        state: present
+      delegate_to: localhost
+      loop: "{{ esxi.hosts | difference([vcenter.deployment.initial_host]) }}"
+    - name: Add VCSA host to datacenter
+      community.vmware.vmware_host:
+        datacenter: "{{ vcenter.datacenter }}"
+        folder: "/{{ vcenter.datacenter }}/host"
+        esxi_hostname: "{{ vcenter.deployment.initial_host }}"
+        esxi_username: "{{ lookup('env', 'ESXI_ROOT_NAME') }}"
+        esxi_password: "{{ lookup('env', 'ESXI_ROOT_PASS') }}"
+        state: present
+      delegate_to: localhost

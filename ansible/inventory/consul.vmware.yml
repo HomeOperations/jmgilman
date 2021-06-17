@@ -1,0 +1,9 @@
+plugin: vmware_vm_inventory
+strict: False
+with_tags: True
+keyed_groups:
+  - key: tag_category.Consul
+    prefix: "Consul"
+    separator: ""
+filters:
+  - tag_category.Consul is defined

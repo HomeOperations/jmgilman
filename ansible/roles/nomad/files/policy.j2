@@ -1,0 +1,8 @@
+{% for rule in item.rules %}
+{{ rule.resource}}{% if rule.segment is defined %} "{{ rule.segment }}"{% endif %} {
+    policy = "{{ rule.policy }}"
+{% if rule.capabilities is defined %}
+    capabilities = ["{{ rule.capabilities | join('", "') }}"]
+{% endif %}
+}
+{% endfor %}

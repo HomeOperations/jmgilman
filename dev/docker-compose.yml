@@ -1,0 +1,75 @@
+version: '3'
+services:
+    step:
+        container_name: step
+        image: smallstep/step-cli
+        command: /tmp/gen_certs.sh
+        volumes: 
+            - ./tmp:/tmp/vol
+            - ./scripts/gen_certs.sh:/tmp/gen_certs.sh
+    minio:
+        container_name: minio
+        image: minio/minio
+        command: gateway nas /data
+        ports:
+            - 9000:9000
+        volumes:
+            - ./nfs/data:/data
+            - ./tmp/minio.crt:/root/.minio/certs/public.crt
+            - ./tmp/minio.key:/root/.minio/certs/private.key
+            - ./tmp/root_ca.crt:/root/.minio/certs/CAs/root_ca.crt
+        environment: 
+            - MINIO_ROOT_USER
+            - MINIO_ROOT_PASSWORD
+        depends_on: 
+            - step
+    consul:
+        container_name: consul
+        image: consul
+        ports:
+            - 8500:8500
+        volumes:
+            - ./configs/consul.json:/consul/config/consul.json
+        environment: 
+            - CONSUL_BIND_INTERFACE=eth0
+        depends_on: 
+            - step
+    minio-mc:
+        container_name: minio-mc
+        image: minio/mc
+        command: cp minio/consul/backups/latest.snap /tmp/vol/latest.snap
+        volumes:
+            - ./tmp:/tmp/vol
+            - ./tmp/root_ca.crt:/root/.mc/certs/CAs/root_ca.crt
+        environment: 
+            - MC_HOST_minio
+        depends_on: 
+            - minio
+            - consul
+    consul-client:
+        container_name: consul-client
+        image: consul
+        command: snapshot restore /tmp/vol/latest.snap
+        volumes:
+            - ./tmp:/tmp/vol
+        environment: 
+            - CONSUL_HTTP_ADDR=http://consul:8500
+        depends_on: 
+            - minio-mc
+    vault:
+        container_name: vault
+        image: vault
+        command: server
+        ports:
+            - 8200:8200
+        volumes:
+            - ./configs/vault.hcl:/vault/config/vault.hcl
+            - ./tmp:/tmp/vol
+        environment: 
+            - VAULT_API_ADDR=https://vault:8200
+        cap_add: 
+            - IPC_LOCK
+        depends_on: 
+            - consul-client
+volumes: 
+    backups:

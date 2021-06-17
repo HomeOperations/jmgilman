@@ -1,0 +1,7 @@
+acl: "{{ lookup('community.general.consul_kv', 'nomad/acl') }}"
+external_domain: "{{ (lookup('community.general.consul_kv', 'network/dns') | from_json).domain }}"
+config: "{{ lookup('community.general.consul_kv', 'nomad/config') }}"
+tls: "{{ lookup('community.general.consul_kv', 'nomad/tls') }}"
+consul:
+  path: "{{ lookup('community.general.consul_kv', 'consul/path') }}"
+  vault: "{{ lookup('community.general.consul_kv', 'consul/vault') }}"

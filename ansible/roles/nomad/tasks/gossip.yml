@@ -1,0 +1,21 @@
+- hashivault_read:
+    secret: "{{ vault.secrets.gossip }}"
+    key: key
+    version: 2
+  register: gossip_read
+  ignore_errors: true
+  run_once: true
+  delegate_to: localhost
+- block:
+    - name: Generate gossip encryption key
+      ansible.builtin.shell: nomad operator keygen
+      register: enc_key
+      run_once: true
+      delegate_to: localhost
+    - name: Write gossip encryption key
+      hashivault_secret:
+        secret:  "{{ vault.secrets.gossip }}"
+        data:
+          key: "{{ enc_key.stdout }}"
+      delegate_to: localhost
+  when: gossip_read.failed

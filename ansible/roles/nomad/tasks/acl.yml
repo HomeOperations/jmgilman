@@ -1,0 +1,30 @@
+- name: Create the bootstrap token
+  ansible.builtin.shell: nomad acl bootstrap
+  register: token_resp
+  ignore_errors: true
+  run_once: true
+- set_fact:
+    accessor_id: "{{ token_resp.stdout_lines[0] | regex_search('Accessor ID\\s*=\\s*(.*?)\\Z','\\1') }}"
+    secret_id: "{{ token_resp.stdout_lines[1] | regex_search('Secret ID\\s*=\\s*(.*?)\\Z','\\1') }}"
+  when: token_resp.stderr | length == 0
+- name: Write root token
+  hashivault_secret:
+    secret:  "{{ vault.secrets.tokens.root }}"
+    data:
+      accessor: "{{ accessor_id[0] }}"
+      secret: "{{ secret_id[0] }}"
+  delegate_to: localhost
+  when: token_resp.stderr | length == 0
+
+- name: Read root token
+  hashivault_read:
+    secret: "{{ vault.secrets.tokens.root }}"
+    key: secret
+    version: 2
+  register: token
+  run_once: true
+  delegate_to: localhost
+
+- name: Create ACL policies
+  include_tasks: policy.yml
+  loop: "{{ acl.policies }}"

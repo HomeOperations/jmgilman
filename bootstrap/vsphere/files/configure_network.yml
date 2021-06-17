@@ -1,0 +1,92 @@
+---
+- name: Configure vCenter
+  hosts: localhost
+  gather_facts: no
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: Create distributed switch
+      community.vmware.vmware_dvswitch:
+        datacenter: '{{ vcenter.datacenter }}'
+        switch: "{{ vcenter.network.vds.name }}"
+        uplink_quantity: "{{ vcenter.network.vds.ports }}"
+        mtu: "{{ vcenter.network.vds.mtu }}"
+        discovery_operation: "{{ vcenter.network.vds.discovery_operation }}"
+        discovery_proto: "{{ vcenter.network.vds.discovery_proto }}"
+        multicast_filtering_mode: "{{ vcenter.network.vds.multicast_filtering_mode }}"
+        state: present
+      delegate_to: localhost
+    - name: Create distributed switch port groups
+      community.vmware.vmware_dvs_portgroup:
+        switch_name: "{{ vcenter.network.vds.name }}"
+        portgroup_name: "{{ item.name }}"
+        vlan_id: "{{ item.vlan_id }}"
+        num_ports: "{{ item.num_ports }}"
+        port_binding: "{{ item.binding }}"
+        state: present
+      delegate_to: localhost
+      loop: "{{ vcenter.network.vds.port_groups }}"
+    - name: Remove vmnic0 from ESXi host switches
+      community.vmware.vmware_vswitch:
+        esxi_hostname: "{{ item }}"
+        switch: "{{ esxi.default_vSwitch }}"
+        nics: [vmnic1]
+      delegate_to: localhost
+      loop: "{{ esxi.hosts }} "
+    - name: Add ESXi hosts to vDS with vmnic0
+      community.vmware.vmware_dvs_host:
+        esxi_hostname: "{{ item }}"
+        switch_name: "{{ vcenter.network.vds.name }}"
+        vmnics:
+            - vmnic0
+        state: present
+      delegate_to: localhost
+      loop: "{{ esxi.hosts }}"
+    - name: Migrate management vmk
+      community.vmware.vmware_migrate_vmk:
+        esxi_hostname: "{{ item }}"
+        device: vmk0
+        current_switch_name: "{{ esxi.default_vSwitch }}"
+        current_portgroup_name: "{{ esxi.default_management_pg }}"
+        migrate_switch_name: "{{ vcenter.network.vds.name }}"
+        migrate_portgroup_name: "{{ vcenter.network.vds.management_pg }}"
+      delegate_to: localhost
+      loop: "{{ esxi.hosts }}"
+    - name: Migrate VCSA VM to vDS
+      community.vmware.vmware_vm_vss_dvs_migrate:
+        vm_name: '{{ vcenter.deployment.name }}'
+        dvportgroup_name: "{{ vcenter.network.vds.management_pg }}"
+      delegate_to: localhost
+    - name: Remove local switches from ESXi hosts
+      community.vmware.vmware_vswitch:
+        esxi_hostname: "{{ item }}"
+        switch: "{{ esxi.default_vSwitch }}"
+        state: absent
+      delegate_to: localhost
+      loop: "{{ esxi.hosts }} "
+    - name: Add ESXi hosts to vDS with both vmnics
+      community.vmware.vmware_dvs_host:
+        esxi_hostname: "{{ item }}"
+        switch_name: "{{ vcenter.network.vds.name }}"
+        vmnics:
+            - vmnic0
+            - vmnic1
+        state: present
+      delegate_to: localhost
+      loop: "{{ esxi.hosts }}"
+    - name: Add storage vmkernels
+      community.vmware.vmware_vmkernel:
+          esxi_hostname: "{{ item.host }}"
+          dvswitch_name: "{{ vcenter.network.vds.name }}"
+          portgroup_name: "{{ item.port_group }}"
+          network:
+            type: 'static'
+            ip_address: "{{ item.address }}"
+            subnet_mask: "{{ item.subnet }}"
+            default_gateway: "{{ item.gateway }}"
+          state: present
+          enable_vmotion: True
+          enable_provisioning: True
+          validate_certs: no
+      delegate_to: localhost
+      loop: "{{ vcenter.network.vmk.storage }} "

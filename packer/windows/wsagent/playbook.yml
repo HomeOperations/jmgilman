@@ -1,0 +1,23 @@
+---
+- name: Agent playbook
+  hosts: all
+  tasks:
+    - name: Install required packages
+      chocolatey.chocolatey.win_chocolatey:
+        name: 
+          - git
+          - python
+          - upack
+        state: present
+    - name: Install EPS Module
+      ansible.windows.win_shell: pwsh -C Install-Module EPS -Scope AllUsers -Force
+      args:
+        executable: cmd
+    - name: Install CPC Module
+      ansible.windows.win_shell: pwsh -C Install-Module ChocolateyPackageCreator -Scope AllUsers -Force
+      args:
+        executable: cmd
+    - name: Copy agent install file
+      ansible.windows.win_copy:
+        src: install-agent.ps1
+        dest: C:\install-agent.ps1

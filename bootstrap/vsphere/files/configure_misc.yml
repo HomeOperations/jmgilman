@@ -1,0 +1,58 @@
+---
+- name: Configure vCenter
+  hosts: localhost
+  gather_facts: no
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: Add vCenter license
+      community.vmware.vcenter_license:
+        license: "{{ lookup('env', 'VCENTER_LICENSE') }}"
+        state: present
+      delegate_to: localhost
+    - name: Add ESXi license
+      community.vmware.vcenter_license:
+        license: "{{ lookup('env', 'ESXI_LICENSE') }}"
+        esxi_hostname: '{{ item }}'
+        state: present
+      delegate_to: localhost
+      loop: "{{ esxi.hosts }}"
+    - name: Stop SSH and console services
+      community.vmware.vmware_host_service_manager:
+        esxi_hostname: "{{ item.1 }}"
+        service_name: "{{ item.0 }}"
+        state: absent
+        service_policy: off
+      delegate_to: localhost
+      with_nested:
+        - ["TSM", "TSM-SSH"]
+        - "{{ esxi.hosts }}"
+    - name: Supress warnings
+      community.vmware.vmware_host_config_manager:
+        esxi_hostname: "{{ item }}"
+        options:
+          'UserVars.SuppressCoredumpWarning': '1'
+          'UserVars.SuppressHyperthreadWarning': '1'
+      delegate_to: localhost
+      loop: "{{ esxi.hosts }}"
+    - name: Create Veeam tag category
+      community.vmware.vmware_category:
+        category_name: Veeam
+        category_description: Veeam tags
+        category_cardinality: multiple
+        state: present
+    - name: Gather category facts
+      community.vmware.vmware_category_info:
+      delegate_to: localhost
+      register: tag_category_results
+    - set_fact:
+        category_id: "{{ tag_category_results.tag_category_info | json_query(query)}}"
+      vars:
+        query: "[?category_name==`Veeam`]"
+    - name: Create a tag
+      community.vmware.vmware_tag:
+        category_id: "{{ category_id[0].category_id }}"
+        tag_name: Backup
+        tag_description: Marks this VM to be backed up by Veeam
+        state: present
+      delegate_to: localhost

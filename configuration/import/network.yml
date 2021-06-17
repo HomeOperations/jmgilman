@@ -1,0 +1,30 @@
+import_path: network
+
+dns:
+  server: 1.1.1.1
+  domain: gilman.io
+management:
+  name: Management network
+  subnet: 192.168.0.0/24
+  gateway: 192.168.0.1
+  vlan: 100
+prod:
+  name: Production network
+  subnet: 192.168.1.0/24
+  gateway: 192.168.1.1
+  vlan: 101
+dev:
+  name: Development network
+  subnet: 192.168.2.0/24
+  gateway: 192.168.2.1
+  vlan: 102
+storage:
+  name: Storage network
+  subnet: 192.168.3.0/24
+  gateway: 192.168.3.1
+  vlan: 103
+allocations:
+  consul:
+    ip: 192.168.1.100
+    subnet: 255.255.255.0
+    gateway: 192.168.1.1

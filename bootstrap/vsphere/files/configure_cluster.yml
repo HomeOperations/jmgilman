@@ -1,0 +1,31 @@
+---
+- name: Configure vCenter
+  hosts: localhost
+  gather_facts: no
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: Add NFS datastores
+      community.vmware.vmware_host_datastore:
+        datastore_name: "{{ item.0.name }}"
+        datastore_type: nfs
+        nfs_server: "{{ item.0.address }}"
+        nfs_path: "{{ item.0.path }}"
+        esxi_hostname: "{{ item.1 }}"
+        state: present
+      delegate_to: localhost
+      with_nested:
+        - "{{ vcenter.datastores }}"
+        - "{{ esxi.hosts }}"
+    - name: Enable DRS
+      community.vmware.vmware_cluster_drs:
+        datacenter_name: "{{ vcenter.datacenter }}"
+        cluster_name: "{{ vcenter.cluster.name }}"
+        enable: true
+      delegate_to: localhost
+    - name: Enable HA
+      community.vmware.vmware_cluster_ha:
+        datacenter_name: "{{ vcenter.datacenter }}"
+        cluster_name: "{{ vcenter.cluster.name }}"
+        enable: true
+      delegate_to: localhost

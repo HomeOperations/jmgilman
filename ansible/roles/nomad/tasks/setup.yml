@@ -1,0 +1,24 @@
+- name: Install Nomad
+  ansible.builtin.apt:
+    name: nomad
+- name: Create nomad group
+  ansible.builtin.group:
+    name: "{{ service.group }}"
+    system: yes
+- name: Create nomad user
+  ansible.builtin.user:
+    name: "{{ service.user }}"
+    group: "{{ service.group }}"
+    system: yes
+- name: Create data directory
+  ansible.builtin.file:
+    path: "{{ path.dir.data }}"
+    state: directory
+    owner: "{{ service.user }}"
+    group: "{{ service.group }}"
+- name: Create config directory
+  ansible.builtin.file:
+    path: "{{ path.dir.config }}"
+    state: directory
+    owner: "{{ service.user }}"
+    group: "{{ service.group }}"

@@ -1,0 +1,30 @@
+- name: Read default token
+  hashivault_read:
+    secret: "{{ vault.secrets.tokens.base }}/{{ ansible_hostname }}"
+    key: secret
+    version: 2
+  register: token_read
+  ignore_errors: true
+  delegate_to: localhost
+- block:
+    - name: Generate default token
+      ansible.builtin.uri:
+        url: "https://127.0.0.1:8501/v1/acl/token"
+        method: PUT
+        body:
+          Description: "Default token for {{ ansible_hostname }}"
+          Roles:
+            - Name: "{{ ansible_hostname }}"
+        body_format: json
+        validate_certs: no
+        headers:
+          X-Consul-Token: "{{ token.value }}"
+      register: token_resp
+    - name: Write policy token
+      hashivault_secret:
+        secret:  "{{ vault.secrets.tokens.base }}/{{ ansible_hostname }}"
+        data:
+          accessor: "{{ token_resp.json.AccessorID }}"
+          secret: "{{ token_resp.json.SecretID }}"
+      delegate_to: localhost
+  when: token_read.failed

@@ -1,0 +1,59 @@
+import_path: machines
+
+nomad:
+  servers:
+    nomad01:
+      consul:
+        roles:
+          - server
+          - nomad
+      networking:
+        ip: 192.168.1.111
+        subnet: 255.255.255.0
+        gateway: 192.168.1.1
+    nomad02:
+      consul:
+        roles:
+          - server
+          - nomad
+      networking:
+        ip: 192.168.1.112
+        subnet: 255.255.255.0
+        gateway: 192.168.1.1
+    nomad03:
+      consul:
+        roles:
+          - server
+          - nomad
+      networking:
+        ip: 192.168.1.113
+        subnet: 255.255.255.0
+        gateway: 192.168.1.1
+  clients:
+    worker01:
+      consul:
+        roles:
+          - client
+          - nomad
+      networking:
+        ip: 192.168.1.121
+        subnet: 255.255.255.0
+        gateway: 192.168.1.1
+    worker02:
+      consul:
+        roles:
+          - client
+          - nomad
+      networking:
+        ip: 192.168.1.122
+        subnet: 255.255.255.0
+        gateway: 192.168.1.1
+    worker03:
+      consul:
+        roles:
+          - client
+          - nomad
+      networking:
+        ip: 192.168.1.123
+        subnet: 255.255.255.0
+        gateway: 192.168.1.1

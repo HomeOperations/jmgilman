@@ -1,0 +1,69 @@
+---
+- name: Configure vCenter
+  hosts: localhost
+  gather_facts: no
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: Enable iSCSI software adapters on ESXi hosts
+      shell: |
+        Connect-VIServer `
+          -Server {{ vcenter.deployment.networking.hostname }} `
+          -Username administrator@vsphere.local `
+          -Password {{ lookup('env', 'VCENTER_ADMIN_PASS') }} `
+          -Force
+        foreach ($vmhost in Get-VMHost) {
+          $vmhost | Get-VMHostStorage | Set-VMHostStorage -SoftwareIScsiEnabled $True
+        }
+      args:
+        executable: /usr/bin/pwsh
+      no_log: true
+    - name: Pause for 20 seconds to allow adapters to enable
+      pause:
+        seconds: 20
+    - name: Add iSCSI targets to ESXi hosts
+      community.vmware.vmware_host_iscsi:
+        esxi_hostname: "{{ item }}"
+        iscsi_config:
+          vmhba_name: vmhba64
+          static_target:
+            iscsi_name: "{{ nas.iscsi_target }}"
+            address: "{{ nas.address }}"
+        state: present
+      delegate_to: localhost
+      loop: "{{ esxi.hosts }}"
+    - name: Rescan all ESXi host HBA's
+      community.vmware.vmware_host_scanhba:
+          esxi_hostname: '{{ item }}'
+          refresh_storage: true
+          validate_certs: no
+      delegate_to: localhost
+      loop: "{{ esxi.hosts }}"
+    - name: Gather iSCSI configuration information of ESXi host
+      community.vmware.vmware_host_disk_info:
+        esxi_hostname: '{{ item }}'
+      delegate_to: localhost
+      loop: "{{ esxi.hosts }}"
+      register: iscsi_info
+    - set_fact:
+        iscsi_names: "{{ iscsi_info | json_query(query)}}"
+      vars:
+        query: "results[*].hosts_disk_info.*[?device_ctd_list[0] == `vmhba64:C0:T0:L1`].canonical_name"
+    - name: Mount iSCSI datastore
+      community.vmware.vmware_host_datastore:
+        esxi_hostname: "{{ esxi.hosts[0] }}"
+        datastore_name: "{{ vcenter.iscsi.name }}"
+        datastore_type: vmfs
+        vmfs_device_name: "{{ iscsi_names[0][0][0] }}"
+        state: present
+        validate_certs: no
+      delegate_to: localhost
+    - name: Pause for 1 minute to allow datastore propogation
+      pause:
+        minutes: 1
+    - name: Move VCSA storage to iSCSI
+      community.vmware.vmware_vmotion:
+        vm_name: "{{ vcenter.deployment.name }}"
+        destination_host: "{{ vcenter.deployment.initial_host }}"
+        destination_datastore: "{{ vcenter.iscsi.name }}"
+      delegate_to: localhost

@@ -1,0 +1,47 @@
+---
+- name: Enable root PKI backend
+  hashivault_secret_engine:
+    name: pki
+    backend: pki
+    config:
+      max_lease_ttl: 87600h
+- name: Create root CA
+  hashivault_pki_ca:
+    kind: root
+    mount_point: pki
+    common_name: gilman.io
+    config:
+      ttl: 87600h
+- name: Enable intermediate PKI backend
+  hashivault_secret_engine:
+    name: pki_int
+    backend: pki
+    config:
+      max_lease_ttl: 43800h
+- name: Create intermediate CA
+  hashivault_pki_ca:
+    kind: intermediate
+    mount_point: pki_int
+    common_name: gilman.io intermediate
+  register: int_csr
+- name: Sign intermediate CSR
+  hashivault_pki_cert_sign:
+    type: intermediate
+    mount_point: pki
+    common_name: gilman.io intermediate
+    csr: "{{ int_csr.data.csr }}"
+    extra_params:
+      ttl: 43800h
+  register: signed_int_cert
+  when: int_csr.changed
+- name: Import signed intermediate certificate
+  hashivault_pki_set_signed:
+    mount_point: pki_int
+    certificate: "{{ signed_int_cert.data.certificate }}\n{{ signed_int_cert.data.issuing_ca }}"
+  when: int_csr.changed
+- name: Create PKI roles
+  hashivault_write:
+    mount_point: "{{ item.mount }}"
+    secret:  "roles/{{ item.name }}"
+    data: "{{ item.data }}"
+  with_items: "{{ pki.roles }}"

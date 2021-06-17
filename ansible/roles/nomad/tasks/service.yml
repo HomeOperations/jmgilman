@@ -1,0 +1,14 @@
+- name: Generate service file
+  ansible.builtin.template:
+    src: files/service.j2
+    dest: /lib/systemd/system/nomad.service
+- name: Enable and start Nomad service
+  ansible.builtin.service:
+    name: nomad
+    enabled: yes
+    state: started
+  register: service
+- name: Wait for Nomad cluster to bootstrap
+  pause:
+    seconds: 60
+  when: service.changed

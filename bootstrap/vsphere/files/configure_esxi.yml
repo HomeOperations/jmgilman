@@ -1,0 +1,69 @@
+---
+- name: Configure ESXi hosts
+  hosts: localhost
+  gather_facts: no
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: Change root password
+      community.vmware.vmware_local_user_manager:
+        hostname: "{{ item }}"
+        username: "{{ lookup('env', 'ESXI_ROOT_NAME') }}"
+        password: "{{ esxi.default_root_password }}"
+        local_user_name: root
+        local_user_password: "{{ lookup('env', 'ESXI_ROOT_PASS') }}"
+      delegate_to: localhost
+      ignore_errors: yes
+      loop: "{{ esxi.hosts }}"
+    - name: Configure NTP servers
+      community.vmware.vmware_host_ntp:
+        hostname: "{{ item }}"
+        username: "{{ lookup('env', 'ESXI_ROOT_NAME') }}"
+        password: "{{ lookup('env', 'ESXI_ROOT_PASS') }}"
+        esxi_hostname: "{{ item }}"
+        state: present
+        ntp_servers: "{{ esxi.ntp_servers }}"
+      delegate_to: localhost
+      loop: "{{ esxi.hosts }}"
+    - name: Start and enable NTP service
+      community.vmware.vmware_host_service_manager:
+        hostname: "{{ item }}"
+        username: "{{ lookup('env', 'ESXI_ROOT_NAME') }}"
+        password: "{{ lookup('env', 'ESXI_ROOT_PASS') }}"
+        esxi_hostname: "{{ item }}"
+        service_name: ntpd
+        state: present
+        service_policy: on
+      delegate_to: localhost
+      loop: "{{ esxi.hosts }}"
+    - name: Enable CEIP
+      community.vmware.vmware_host_config_manager:
+        hostname: "{{ item }}"
+        username: "{{ lookup('env', 'ESXI_ROOT_NAME') }}"
+        password: "{{ lookup('env', 'ESXI_ROOT_PASS') }}"
+        esxi_hostname: "{{ item }}"
+        options:
+          'UserVars.HostClientCEIPOptIn': '1'
+        validate_certs: no
+      delegate_to: localhost
+      loop: "{{ esxi.hosts }}"
+    - name: Configure VM Network on hosts
+      community.vmware.vmware_portgroup:
+        hostname: "{{ item }}"
+        username: "{{ lookup('env', 'ESXI_ROOT_NAME') }}"
+        password: "{{ lookup('env', 'ESXI_ROOT_PASS') }}"
+        hosts: 
+          - "{{ item }}"
+        switch: "{{ esxi.default_vSwitch }}"
+        portgroup: "{{ esxi.default_vm_pg }}"
+        vlan_id: 100
+      delegate_to: localhost
+      loop: "{{ esxi.hosts }}"
+    - name: Exit maintenance mode on vCenter deployment host
+      community.vmware.vmware_maintenancemode:
+        hostname: "{{ vcenter.deployment.initial_host }}"
+        username: "{{ lookup('env', 'ESXI_ROOT_NAME') }}"
+        password: "{{ lookup('env', 'ESXI_ROOT_PASS') }}"
+        esxi_hostname: "{{ vcenter.deployment.initial_host }}"
+        state: absent
+      delegate_to: localhost

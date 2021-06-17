@@ -1,0 +1,26 @@
+
+#cloud-config
+autoinstall:
+  version: 1
+  early-commands:
+    - systemctl stop ssh # otherwise packer tries to connect and exceed max attempts
+  network:
+    network:
+      version: 2
+      ethernets:
+        ens192:
+          dhcp4: yes
+          dhcp-identifier: mac
+  apt:
+    preserve_sources_list: false
+    primary:
+      - arches: [amd64]
+        uri: "http://archive.ubuntu.com/ubuntu/"
+  ssh:
+    install-server: yes
+  identity:
+    hostname: ub2004.gilman.io
+    password: "$6$FhcddHFVZ7ABA4Gi$kylVJKo2PM9d/d1EveT0kumvU49veWO493FzchOGdNFO/KalOA1TFhbFihXtxVugfJ8i8HTy9DjSn4.DU31Yh1"
+    username: admin
+  packages:
+    - open-vm-tools

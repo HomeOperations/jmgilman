@@ -1,0 +1,54 @@
+trigger:
+  branches:
+    include:
+      - master
+  paths:
+    include:
+      - ubuntu/clone.pkr.hcl
+      - ubuntu/ubagent/*
+
+variables:
+  os: ubuntu
+  image: amp
+  type: clone
+
+jobs:
+- job: Default
+  timeoutInMinutes: 120
+  pool:
+    name: Lab
+    demands:
+      - agent.os -equals Linux
+  steps:
+  - task: AzureAppConfiguration@3
+    inputs:
+      azureSubscription: 'Lab Resource Group'
+      ConfigstoreName: 'GLabConfig'
+      KeyFilter: '*'
+      Label: 'vcenter'
+  - task: AzureAppConfiguration@3
+    inputs:
+      azureSubscription: 'Lab Resource Group'
+      ConfigstoreName: 'GLabConfig'
+      KeyFilter: '*'
+      Label: 'packer'
+  - task: AzureAppConfiguration@3
+    inputs:
+      azureSubscription: 'Lab Resource Group'
+      ConfigstoreName: 'GLabConfig'
+      KeyFilter: '*'
+      Label: 'amp'
+  - task: PowerShell@2
+    displayName: 'Build Azure DevOps Ubuntu agent packer image'
+    inputs:
+      filePath: build.ps1
+      arguments: -Os $(os) -Image $(image) -Type $(type)
+      workingDirectory: $(Build.SourcesDirectory)/ubuntu
+      pwsh: true
+    env:
+      VCENTER_USER: $(vcenter.username)
+      VCENTER_PASS: $(vcenter.password)
+      ADMIN_PASS: $(packer.admin.password)
+      AMP_USERNAME: $(amp.admin.username)
+      AMP_PASSWORD: $(amp.admin.password)
+      

@@ -1,0 +1,3 @@
+---
+- name: Configure PKI endpoint
+  import_tasks: pki.yml

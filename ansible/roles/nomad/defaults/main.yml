@@ -1,0 +1,46 @@
+---
+# defaults file for nomad
+tls: true
+acl:
+  enabled: false
+  policies: []
+config:
+  datacenter: gilman
+  region: global
+  bind_int: eth0
+  server:
+    verify_server_hostname: true
+    verify_https_client: false
+consul:
+  token: mytoken
+  path:
+    cert:
+      ca: /etc/consul.d/ca.pem
+      client: /etc/consul.d/client_cert.pem
+    key:
+      client: /etc/consul.d/client_key.pem
+path:
+  config: /etc/nomad.d/nomad.hcl
+  dir:
+    data: /opt/nomad
+    config: /etc/nomad.d
+  cert:
+    ca: /etc/nomad.d/ca.pem
+    chain: /etc/nomad.d/ca_chain.pem
+    server: /etc/nomad.d/server_cert.pem
+    client: /etc/nomad.d/client_cert.pem
+  key:
+    server: /etc/nomad.d/server_key.pem
+    client: /etc/nomad.d/client_key.pem
+service:
+  user: nomad
+  group: nomad
+vault:
+  secrets:
+    gossip: nomad/gossip
+    tokens:
+      base: nomad/tokens
+      root: nomad/tokens/root
+  pki:
+    mount: pki_int
+    role: nomad

@@ -1,0 +1,33 @@
+---
+- name: CentOS Docker playbook
+  hosts: all
+  become: yes
+  tasks:
+    - name: Add Docker repository
+      shell: yum-config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+      args:
+        creates: /etc/yum.repos.d/docker-ce.repo
+    - name: Install Docker
+      ansible.builtin.yum:
+        update_cache: yes
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+    - name: Add Docker group
+      ansible.builtin.group:
+        name: docker
+        state: present
+    - name: Add admin user to docker group
+      user:
+        name: admin
+        groups: docker
+        append: yes
+    - name: Copy service file
+      ansible.builtin.copy:
+        src: docker.service
+        dest: /usr/lib/systemd/system/docker.service
+    - name: Enable Docker service
+      ansible.builtin.service:
+        name: docker
+        enabled: yes

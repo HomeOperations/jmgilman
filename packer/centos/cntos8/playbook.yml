@@ -1,0 +1,54 @@
+---
+- name: CentOS 8 Base Playbook
+  hosts: all
+  become: yes
+  tasks:
+    - name: Change admin password
+      user:
+        name: admin
+        update_password: always
+        password: "{{ lookup('env', 'ADMIN_PASSWORD')|password_hash('sha512') }}"
+    - name: Install yum utilities
+      ansible.builtin.yum:
+        update_cache: yes
+        name:
+          - yum-utils
+    - name: Add Microsoft repository
+      shell: yum-config-manager --add-repo=https://packages.microsoft.com/config/rhel/8/prod.repo
+      args:
+        creates: /etc/yum.repos.d/prod.repo 
+    - name: Add Hashicorp repository
+      shell: yum-config-manager --add-repo=https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+      args:
+        creates: /etc/yum.repos.d/hashicorp.repo
+    - name: Install required packages
+      ansible.builtin.yum:
+        name:
+          - nano
+          - perl
+          - powershell
+          - unzip
+          - vim
+          - wget
+    - name: Install Hashicorp packages
+      ansible.builtin.yum:
+        name:
+          - consul
+          - vault
+    - name: Install packages for connecting to AD
+      ansible.builtin.yum:
+        name:
+          - realmd
+          - sssd
+          - oddjob
+          - oddjob-mkhomedir
+          - adcli
+          - samba-common
+          - samba-common-tools
+          - krb5-workstation
+          - authselect-compat
+    - name: Enable support for rc4-hmac in kerberos 
+      ansible.builtin.lineinfile:
+        path: /etc/krb5.conf.d/crypto-policies
+        regexp: '^permitted_enctypes'
+        line: permitted_enctypes = aes256-cts-hmac-sha1-96 aes256-cts-hmac-sha384-192 camellia256-cts-cmac aes128-cts-hmac-sha1-96 aes128-cts-hmac-sha256-128 camellia128-cts-cmac rc4-hmac

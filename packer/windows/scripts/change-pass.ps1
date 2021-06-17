@@ -1,0 +1,1 @@
+Get-LocalUser -Name 'Administrator' | Set-LocalUser -Password (ConvertTo-SecureString -AsPlainText $env:ADMIN_PASSWORD -Force)

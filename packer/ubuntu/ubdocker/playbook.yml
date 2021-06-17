@@ -1,0 +1,31 @@
+---
+- name: Ubuntu Docker playbook
+  hosts: all
+  become: yes
+  tasks:
+    - name: Add Docker signing key
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+    - name: Add Docker repository
+      ansible.builtin.apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+        state: present
+    - name: Install Docker
+      ansible.builtin.apt:
+        update_cache: yes
+        name:
+          - docker-ce
+    - name: Add Docker group
+      ansible.builtin.group:
+        name: docker
+        state: present
+    - name: Add admin user to docker group
+      user:
+        name: admin
+        groups: docker
+        append: yes
+    - name: Enable Docker service
+      ansible.builtin.service:
+        name: docker
+        enabled: yes

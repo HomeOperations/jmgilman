@@ -1,0 +1,53 @@
+---
+- name: CentOS agent playbook
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install required packages
+      ansible.builtin.yum:
+        update_cache: yes
+        name:
+          - python3
+          - python3-pip
+          - packer
+          - terraform
+    - name: Upgrade pip
+      ansible.builtin.pip:
+        name: pip
+        state: latest
+    - name: Install WinRM
+      ansible.builtin.pip:
+        name: pywinrm
+    - name: Install ansible
+      ansible.builtin.pip:
+        name: ansible
+    - name: Install chocolatey collection
+      ansible.builtin.command: /usr/local/bin/ansible-galaxy collection install chocolatey.chocolatey
+    - name: Install Ansible Windows collection
+      ansible.builtin.command: /usr/local/bin/ansible-galaxy collection install ansible.windows
+    - name: Install community Windows collection
+      ansible.builtin.command: /usr/local/bin/ansible-galaxy collection install community.windows
+    - name: Download Packer Windows Update plugin
+      ansible.builtin.get_url:
+        url: https://github.com/rgl/packer-provisioner-windows-update/releases/download/v0.11.0/packer-provisioner-windows-update_0.11.0_linux_amd64.tar.gz
+        dest: /tmp/pwu.tar.gz
+    - name: Extract Packer Windows Update plugin
+      ansible.builtin.unarchive:
+        src: /tmp/pwu.tar.gz
+        dest: /tmp
+        remote_src: yes
+    - name: Install Packer Windows Update plugin
+      ansible.builtin.command: cp /tmp/packer-provisioner-windows-update /usr/bin/packer-provisioner-windows-update
+    - name: Make Azure DevOps agent directory
+      ansible.builtin.file:
+        path: /opt/agent
+        state: directory
+    - name: Download Azure DevOps agent files
+      ansible.builtin.get_url:
+        url: https://vstsagentpackage.azureedge.net/agent/2.184.2/vsts-agent-linux-x64-2.184.2.tar.gz
+        dest: /tmp/agent.tar.gz
+    - name: Extract Azure DevOps agent files into agent directory
+      ansible.builtin.unarchive:
+        src: /tmp/agent.tar.gz
+        dest: /opt/agent
+        remote_src: yes

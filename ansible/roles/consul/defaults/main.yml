@@ -1,0 +1,50 @@
+---
+# defaults file for nomad_server
+external_domain: my.domain
+server: true
+tls: true
+acl:
+  enabled : true
+  default_policy: deny
+  server_policy: server
+  client_policy: client
+  policies: []
+config:
+  bind_int: eth0
+  bootstrap: 1
+  datacenter: dc1
+  enable_script_checks: false
+  disable_remote_exec: true
+  log_level: WARNING
+  retry_join: 127.0.0.1
+  ui: false
+  ssl:
+    verify_incoming: true
+    verify_incoming_rpc: true
+    verify_outgoing: true
+    verify_server_hostname: true
+path:
+  config: /etc/consul.d/consul.hcl
+  dir:
+    data: /opt/consul
+    config: /etc/consul.d
+  cert:
+    ca: /etc/consul.d/ca.pem
+    chain: /etc/consul.d/ca_chain.pem
+    server: /etc/consul.d/server_cert.pem
+    client: /etc/consul.d/client_cert.pem
+  key:
+    server: /etc/consul.d/server_key.pem
+    client: /etc/consul.d/client_key.pem
+vault:
+  secrets:
+    gossip: consul/gossip
+    tokens:
+      base: consul/tokens
+      root: consul/tokens/root
+  pki:
+    mount: pki_int
+    role: consul
+service:
+  user: consul
+  group: consul

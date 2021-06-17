@@ -1,0 +1,65 @@
+- name: Check for agent certificate
+  stat:
+    path: "{{ path.cert.server }}"
+  register: server_cert_exists
+- name: Check for CLI client certificate
+  stat:
+    path: "{{ path.cert.client}}"
+  register: client_cert_exists
+- block:
+    - name: Generate agent certificate
+      hashivault_pki_cert_issue:
+        mount_point: "{{ vault.pki.mount }}"
+        role: "{{ vault.pki.role }}"
+        common_name: "{{ ansible_hostname }}.{{ config.datacenter }}.consul"
+        extra_params:
+          alt_names: "{{ ansible_hostname }}.{{ external_domain }}, localhost{{ ', server.' + config.datacenter + '.consul' if server }}"
+          ip_sans: "{{ ansible_all_ipv4_addresses | join(',') }}, 127.0.0.1"
+      register: agent_cert
+      delegate_to: localhost
+    - name: Save CA certificate
+      copy:
+        content: "{{ agent_cert.data.issuing_ca }}"
+        dest: "{{ path.cert.ca }}"
+        owner: "{{ service.user }}"
+        group: "{{ service.group }}"
+    - name: Save CA chain certificate
+      copy:
+        content: "{{ agent_cert.data.ca_chain | join('\n') }}"
+        dest: "{{ path.cert.chain }}"
+        owner: "{{ service.user }}"
+        group: "{{ service.group }}"
+    - name: Save agent certificate
+      copy:
+        content: "{{ agent_cert.data.certificate }}"
+        dest: "{{ path.cert.server }}"
+        owner: "{{ service.user }}"
+        group: "{{ service.group }}"
+    - name: Save agent certificate private key
+      copy:
+        content: "{{ agent_cert.data.private_key }}"
+        dest: "{{ path.key.server }}"
+        owner: "{{ service.user }}"
+        group: "{{ service.group }}"
+  when: not server_cert_exists.stat.exists
+- block:
+    - name: Generate CLI client certificate
+      hashivault_pki_cert_issue:
+        mount_point: "{{ vault.pki.mount }}"
+        role: "{{ vault.pki.role }}"
+        common_name: "cli.{{ ansible_hostname }}.{{ config.datacenter }}.consul"
+      register: cli_cert
+      delegate_to: localhost
+    - name: Save CLI client certificate
+      copy:
+        content: "{{ cli_cert.data.certificate }}"
+        dest: "{{ path.cert.client}}"
+        owner: "{{ service.user }}"
+        group: "{{ service.group }}"
+    - name: Save CLI client certificate private key
+      copy:
+        content: "{{ cli_cert.data.private_key }}"
+        dest: "{{ path.key.client }}"
+        owner: "{{ service.user }}"
+        group: "{{ service.group }}"
+  when: not client_cert_exists.stat.exists

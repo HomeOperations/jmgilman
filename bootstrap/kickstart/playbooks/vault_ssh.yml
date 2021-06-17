@@ -1,0 +1,54 @@
+---
+- name: Configure Vault SSH signing
+  hosts: localhost
+  gather_facts: no
+  vars:
+    role: |
+      {
+        "allow_user_certificates": true,
+        "allowed_users": "*",
+        "allowed_extensions": "permit-pty,permit-port-forwarding",
+        "default_extensions": [
+          {
+            "permit-pty": ""
+          }
+        ],
+        "key_type": "ca",
+        "default_user": "admin",
+        "ttl": "18h0m0s"
+      }
+  tasks:
+    - name: Check if SSH secrets engine is enabled
+      ansible.builtin.shell: vault read -format=json sys/mounts
+      register: ssh_read_json
+    - set_fact: ssh_read="{{ ssh_read_json.stdout | from_json }}"
+    - name: Enable SSH secrets engine
+      ansible.builtin.shell: vault secrets enable ssh
+      when: ssh_read.data['ssh/'] is not defined
+    - name: Check if SSH signing key has been generated
+      ansible.builtin.shell: vault read ssh/config/ca
+      ignore_errors: true
+      register: key_read
+    - name: Generate SSH signing key
+      ansible.builtin.shell: ssh-keygen -C ca -t ed25519 -f ca -N ''
+      args:
+        chdir: /tmp
+      when: key_read.stderr is search("keys haven't been configured yet")
+    - name: Import SSH signing key
+      ansible.builtin.shell: vault write ssh/config/ca private_key=@ca public_key=@ca.pub
+      args:
+        chdir: /tmp
+      when: key_read.stderr is search("keys haven't been configured yet")
+    - name: Remove generated signing key from local system
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - /tmp/ca
+        - /tmp/ca.pub
+      when: key_read.stderr is search("keys haven't been configured yet")
+    - name: Create signing role
+      ansible.builtin.shell: |
+        vault write ssh/roles/default -<<"EOH" 
+          {{ role }} 
+        EOH

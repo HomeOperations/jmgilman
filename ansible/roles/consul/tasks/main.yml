@@ -1,0 +1,31 @@
+---
+- name: Configure local system
+  import_tasks: setup.yml
+  tags:
+    - setup
+- name: Configure gossip encryption
+  import_tasks: gossip.yml
+  tags:
+    - gossip
+- name: Configure TLS
+  import_tasks: tls.yml
+  when: tls
+  tags:
+    - tls
+- name: Generate configuration
+  import_tasks: config.yml
+  tags:
+    - config
+- name: Configure environment
+  import_tasks: env.yml
+  tags:
+    - env
+- name: Configure service
+  import_tasks: service.yml
+  tags:
+    - service
+- name: Configure ACL system
+  import_tasks: acl.yml
+  when: acl.enabled
+  tags:
+    - acl

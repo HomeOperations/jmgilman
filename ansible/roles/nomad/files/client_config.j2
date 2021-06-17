@@ -1,0 +1,38 @@
+region = "{{ config.region }}"
+datacenter = "{{ config.datacenter }}"
+data_dir = "{{ path.dir.data }}"
+
+client {
+  enabled = true
+}
+
+{% if tls %}
+tls {
+  http = true
+  rpc  = true
+
+  ca_file   = "{{ path.cert.ca }}"
+  cert_file = "{{ path.cert.server }}"
+  key_file  = "{{ path.key.server }}"
+
+  verify_server_hostname = {{ config.server.verify_server_hostname }}
+  verify_https_client    = {{ config.server.verify_https_client }}
+}
+{% endif %}
+
+{% if acl.enabled %}
+acl {
+  enabled = true
+}
+{% endif %}
+
+consul {
+  address = "127.0.0.1:8501"
+  token   = "{{ token }}"
+
+  ssl = true
+  verify_ssl = true
+  ca_file = "{{ consul.path.cert.ca }}"
+  cert_file = "{{ consul.path.cert.client }}"
+  key_file = "{{ consul.path.key.client }}"
+}

@@ -1,0 +1,41 @@
+#!ipxe
+###
+### {{ site_name }} Other
+###
+
+:custom
+clear custom_choice
+menu Custom Gilman Lab Images
+item --gap vSphere ESXi
+item option_one ${space} esxi0.gilman.io (ESXi 7.0.2)
+item option_two ${space} esxi1.gilman.io (ESXi 7.0.2)
+item option_three ${space} esxi2.gilman.io (ESXi 7.0.2)
+item option_four ${space} esxi3.gilman.io (ESXi 7.0.2)
+item option_five ${space} ESXi 7.0.2 (BIOS)
+choose custom_choice || goto custom_exit
+echo ${cls}
+goto ${custom_choice}
+goto custom_exit
+
+:option_one
+kernel https://ipxe.gilman.io/iso/esxi700/efi/boot/bootx64.efi -c https://ipxe.gilman.io/esxi/esxi0/boot.cfg -U
+boot || goto custom_exit
+
+:option_two
+kernel https://ipxe.gilman.io/iso/esxi700/efi/boot/bootx64.efi -c https://ipxe.gilman.io/esxi/esxi1/boot.cfg -U
+boot || goto custom_exit
+
+:option_three
+kernel https://ipxe.gilman.io/iso/esxi700/efi/boot/bootx64.efi -c https://ipxe.gilman.io/esxi/esxi2/boot.cfg -U
+boot || goto custom_exit
+
+:option_four
+kernel https://ipxe.gilman.io/iso/esxi700/efi/boot/bootx64.efi -c https://ipxe.gilman.io/esxi/esxi3/boot.cfg -U
+boot || goto custom_exit
+
+:option_five
+kernel https://ipxe.gilman.io/iso/esxi700/mboot.c32 -c https://ipxe.gilman.io/iso/esxi700/boot.cfg
+boot || goto custom_exit
+
+:custom_exit
+exit

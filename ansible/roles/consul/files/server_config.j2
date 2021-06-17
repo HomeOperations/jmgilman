@@ -1,0 +1,42 @@
+server = true
+bootstrap_expect = {{ ansible_play_hosts | length }}
+retry_join = ["{{ config.retry_join }}"]
+bind_addr = "{{ vars['ansible_'~config.bind_int].ipv4.address }}"
+client_addr = "{{ vars['ansible_'~config.bind_int].ipv4.address }} 127.0.0.1"
+
+datacenter = "{{ config.datacenter }}"
+log_level = "{{ config.log_level }}"
+encrypt = "{{ enc_key }}"
+ui = {{ config.ui | lower }}
+enable_script_checks = {{ config.enable_script_checks | lower }}
+disable_remote_exec = {{ config.disable_remote_exec | lower }}
+
+data_dir = "{{ path.dir.data }}"
+{% if tls %}
+ca_file = "{{ path.cert.ca }}"
+cert_file = "{{ path.cert.server }}"
+key_file = "{{ path.key.server }}"
+
+verify_incoming = {{ config.ssl.verify_incoming | lower }}
+verify_incoming_rpc = {{ config.ssl.verify_incoming_rpc | lower }}
+verify_outgoing = {{ config.ssl.verify_outgoing | lower }}
+verify_server_hostname = {{ config.ssl.verify_server_hostname | lower }}
+{% endif %}
+
+{% if acl.enabled %}
+acl = {
+  enabled = true
+  default_policy = "{{ acl.default_policy }}"
+  enable_token_persistence = true
+}
+{% endif %}
+
+
+performance {
+  raft_multiplier = 1
+}
+
+ports {
+  http = -1,
+  https = 8501
+}

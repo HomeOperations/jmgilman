@@ -1,0 +1,10 @@
+---
+- name: Configure Nomad clients
+  hosts: NomadClient
+  become: yes
+  vars:
+    server: false
+  vars_files:
+    - vars/nomad.yml
+  roles:
+    - nomad

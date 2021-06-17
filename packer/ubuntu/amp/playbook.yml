@@ -1,0 +1,30 @@
+---
+- name: Amp playbook
+  hosts: all
+  become: yes
+  tasks:
+    - name: Set hostname to FQDN for Windows AD compatibility
+      ansible.builtin.hostname:
+        name: "{{ ansible_hostname }}.{{ ansible_domain }}"
+    - name: Add amp user
+      ansible.builtin.user:
+        name: amp
+        shell: /bin/bash
+    - name: Add Cubecoders signing key
+      ansible.builtin.apt_key:
+        url: http://repo.cubecoders.com/archive.key
+        state: present
+    - name: Add Cubecoders repository
+      ansible.builtin.apt_repository:
+        repo: deb http://repo.cubecoders.com/ debian/
+        state: present
+    - name: Install required packages
+      ansible.builtin.apt:
+        update_cache: yes
+        name:
+          - acl
+          - ampinstmgr
+    - name: Remove netplan config
+      ansible.builtin.file:
+        path: /etc/netplan/50-cloud-init.yaml
+        state: absent

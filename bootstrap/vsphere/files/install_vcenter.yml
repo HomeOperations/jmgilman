@@ -1,0 +1,20 @@
+---
+- name: Install vCenter appliance
+  hosts: localhost
+  gather_facts: no
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: Create vCenter JSON configuration
+      ansible.builtin.template:
+        src: templates/deploy.j2
+        dest: /tmp/deploy.json
+      delegate_to: localhost
+    - name: Create installer log directory
+      file:
+        path: /tmp/vcsa-deploy-logs
+        state: directory
+    - name: Run vCSA installer
+      ansible.builtin.shell:
+        cmd: ./vcsa-deploy install --accept-eula --acknowledge-ceip --no-ssl-certificate-verification --log-dir /tmp/vcsa-deploy-logs /tmp/deploy.json
+        chdir: iso/vcsa-cli-installer/lin64

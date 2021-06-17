@@ -1,0 +1,40 @@
+trigger:
+  branches:
+    include:
+      - master
+  paths:
+    include:
+      - windows/build.ps1
+      - windows/iso.pkr.hcl
+      - windows/wd10/*
+      - windows/scripts/change-pass.ps1
+      - windows/scripts/enable-rdp.ps1
+      - windows/scripts/enable-winrm.ps1
+      - windows/scripts/install-vm-tools.ps1
+      - windows/scripts/undo-winrmconfig.ps1
+
+jobs:
+- job: Default
+  timeoutInMinutes: 120
+  pool:
+    name: Lab
+  steps:
+  - task: AzureAppConfiguration@3
+    inputs:
+      azureSubscription: 'Lab Resource Group'
+      ConfigstoreName: 'GLabConfig'
+      KeyFilter: '*'
+      Label: 'vcenter'
+  - task: AzureAppConfiguration@3
+    inputs:
+      azureSubscription: 'Lab Resource Group'
+      ConfigstoreName: 'GLabConfig'
+      KeyFilter: '*'
+      Label: 'packer'
+  - script: pwsh ./build.ps1 -Type iso -Image wd10
+    workingDirectory: $(Build.SourcesDirectory)/windows
+    displayName: 'Build Windows 10 packer image'
+    env:
+      VCENTER_USER: $(vcenter.username)
+      VCENTER_PASS: $(vcenter.password)
+      ADMIN_PASS: $(packer.admin.password)

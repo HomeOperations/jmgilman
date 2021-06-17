@@ -1,0 +1,31 @@
+- name: "Check if {{ item.Name }} role exists"
+  ansible.builtin.uri:
+    url: "https://127.0.0.1:8501/v1/acl/role/name/{{ item.Name }}"
+    validate_certs: no # https://github.com/ansible/ansible/issues/75015
+    headers:
+      X-Consul-Token: "{{ token.value }}"
+  ignore_errors: true
+  register: role_check
+  run_once: true
+- name: "Create {{ item.Name }} role"
+  ansible.builtin.uri:
+    url: "https://127.0.0.1:8501/v1/acl/role"
+    method: PUT
+    body: "{{ item }}"
+    body_format: json
+    validate_certs: no
+    headers:
+      X-Consul-Token: "{{ token.value }}"
+  run_once: true
+  when: role_check.status == 404
+- name: "Update {{ item.Name }} role"
+  ansible.builtin.uri:
+    url: "https://127.0.0.1:8501/v1/acl/role/{{ role_check.json.ID }}"
+    method: PUT
+    body: "{{ item }}"
+    body_format: json
+    validate_certs: no
+    headers:
+      X-Consul-Token: "{{ token.value }}"
+  run_once: true
+  when: role_check.status != 404

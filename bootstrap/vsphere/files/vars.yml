@@ -1,0 +1,99 @@
+---
+esxi:
+  hosts:
+    - esxi0.gilman.io
+    - esxi1.gilman.io
+    - esxi2.gilman.io
+    - esxi3.gilman.io
+  ntp_servers:
+    - time1.google.com
+    - time2.google.com
+    - time3.google.com
+  default_vSwitch: vSwitch0
+  default_vm_pg: VM Network
+  default_management_pg: Management Network
+  default_root_password: glabT3mp!
+nas:
+  address: nas.gilman.io
+  pxe_path: /volume1/pxe
+  tftp_path: /volume1/tftp
+  iscsi_target: iqn.2000-01.com.synology:GILMAN-DSM1.Target-1.9d17da5224
+vcenter:
+  server: vcenter.gilman.io
+  datacenter: Gilman
+  deployment:
+    name: vCenter Server
+    size: tiny
+    initial_host: esxi1.gilman.io
+    final_host: esxi0.gilman.io
+    port_group: VM Network
+    datastore: datastore1
+    networking:
+      hostname: vcenter.gilman.io
+      ip: 192.168.0.9
+      prefix: 24
+      gateway: 192.168.0.1
+      dns_server: 192.168.1.10
+  cluster:
+    name: Lab
+    evc_mode: intel-haswell
+  datastores:
+    - name: Lab
+      address: nas.gilman.io
+      path: /volume2/Lab
+  iscsi:
+    name: iSCSI
+    host: esxi0.gilman.io
+  network:
+    vmk:
+      storage:
+        - host: esxi0.gilman.io
+          address: 192.168.3.20
+          subnet: 255.255.255.0
+          gateway: 192.168.3.1
+          port_group: Storage
+        - host: esxi1.gilman.io
+          address: 192.168.3.21
+          subnet: 255.255.255.0
+          gateway: 192.168.3.1
+          port_group: Storage
+        - host: esxi2.gilman.io
+          address: 192.168.3.22
+          subnet: 255.255.255.0
+          gateway: 192.168.3.1
+          port_group: Storage
+        - host: esxi3.gilman.io
+          address: 192.168.3.23
+          subnet: 255.255.255.0
+          gateway: 192.168.3.1
+          port_group: Storage
+    vds:
+      name: Core
+      ports: 2
+      mtu: 1500
+      discovery_operation: listen
+      discovery_proto: cdp
+      multicast_filtering_mode: snooping
+      management_pg: Management
+      recovery_pg: Recovery
+      port_groups:
+        - name: Management
+          num_ports: 120
+          vlan_id: 100
+          binding: static
+        - name: Prod
+          num_ports: 120
+          vlan_id: 101
+          binding: static
+        - name: Dev
+          num_ports: 120
+          vlan_id: 102
+          binding: static
+        - name: Storage
+          num_ports: 120
+          vlan_id: 103
+          binding: static
+        - name: Recovery
+          num_ports: 0
+          vlan_id: 100
+          binding: ephemeral

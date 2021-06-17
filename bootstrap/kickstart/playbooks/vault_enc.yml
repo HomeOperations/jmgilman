@@ -1,0 +1,21 @@
+---
+- name: Configure Vault transit engine
+  hosts: localhost
+  gather_facts: no
+  environment:
+    VAULT_CACERT: ../tmp/root_ca.crt
+  tasks:
+    - name: Check if transit engine is enabled
+      ansible.builtin.shell: vault read -format=json sys/mounts
+      register: transit_read_json
+    - set_fact: transit_read="{{ transit_read_json.stdout | from_json }}"
+    - name: Enable transit engine
+      ansible.builtin.shell: vault secrets enable transit
+      when: transit_read.data['transit/'] is not defined
+    - name: Check if MinIO key has been created
+      ansible.builtin.shell: vault list -format=json transit/keys
+      register: minio_read_json
+    - set_fact: minio_read="{{ minio_read_json.stdout | from_json }}"
+    - name: Create MinIO key
+      ansible.builtin.shell: vault write transit/keys/minio exportable=true allow_plaintext_backup=true
+      when: "'minio' not in minio_read"

@@ -1,0 +1,14 @@
+---
+- name: Configure Vault k/v secret engine
+  hosts: localhost
+  gather_facts: no
+  environment:
+    VAULT_CACERT: ../tmp/root_ca.crt
+  tasks:
+    - name: Check if k/v secret engine is enabled
+      ansible.builtin.shell: vault read -format=json sys/mounts
+      register: secret_read_json
+    - set_fact: secret_read="{{ secret_read_json.stdout | from_json }}"
+    - name: Enable k/v secrets engine
+      ansible.builtin.shell: vault secrets enable -path=secret kv-v2
+      when: secret_read.data['secret/'] is not defined

@@ -1,0 +1,29 @@
+---
+- name: Amp playbook
+  hosts: all
+  become: yes
+  tasks:
+    - name: Set hostname to FQDN for Windows AD compatibility
+      ansible.builtin.hostname:
+        name: "{{ ansible_hostname }}.{{ ansible_domain }}"
+    - name: Download getamp.sh
+      get_url:
+        url: http://getamp.sh/
+        dest: /home/administrator/getamp.sh
+        mode: u+rwx
+        checksum: sha256:9B2BACA47FBF265E68D2672E85829CAA10C7557E8148610B3B246F9A57E970F7
+    - name: Install Amp
+      ansible.builtin.shell: /home/administrator/getamp.sh
+      environment:
+        USE_ANSWERS: y
+        ANSWER_AMPUSER: "{{ lookup('env', 'AMP_USERNAME') }}"
+        ANSWER_AMPPASS: "{{ lookup('env', 'AMP_PASSWORD') }}"
+        ANSWER_SYSPASSWORD: "{{ lookup('env', 'AMP_PASSWORD') }}"
+        ANSWER_INSTALLJAVA: y
+        ANSWER_INSTALLSRCDSLIBS: n
+        ANSWER_INSTALLDOCKER: n
+        ANSWER_EMAIL: ""
+    - name: Remove netplan config
+      ansible.builtin.file:
+        path: /etc/netplan/50-cloud-init.yaml
+        state: absent

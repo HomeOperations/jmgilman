@@ -1,0 +1,4 @@
+external_domain: "{{ (lookup('community.general.consul_kv', 'network/dns') | from_json).domain }}"
+tls: "{{ lookup('community.general.consul_kv', 'consul/tls') }}"
+acl: "{{ lookup('community.general.consul_kv', 'consul/acl') }}"
+config: "{{ lookup('community.general.consul_kv', 'consul/config') }}"

@@ -1,0 +1,10 @@
+---
+- name: Configure Consul servers
+  hosts: ConsulServer
+  become: yes
+  vars:
+    server: true
+  vars_files:
+    - vars/consul.yml
+  roles:
+    - consul

@@ -1,0 +1,22 @@
+---
+- name: WS2016GUI playbook
+  hosts: all
+  tasks:
+    - name: Install required packages
+      chocolatey.chocolatey.win_chocolatey:
+        name: 
+          - dotnet-472
+          - vcredist
+        state: present
+    - name: Install GLab module on Powershell 5
+      ansible.windows.win_shell: powershell -C Install-Module GLab-Posh -Scope AllUsers -Force
+      args:
+        executable: cmd
+    - name: Register internal repository on Powershell 7
+      ansible.windows.win_shell: pwsh -C Register-PSRepository -Name internal-powershell -SourceLocation 'http://proget.gilman.io:8624/nuget/internal-powershell/' -PublishLocation 'http://proget.gilman.io:8624/nuget/internal-powershell/' -InstallationPolicy Trusted
+      args:
+        executable: cmd
+    - name: Install GLab module on Powershell 7
+      ansible.windows.win_shell: pwsh -C Install-Module GLab-Posh -Scope AllUsers -Force
+      args:
+        executable: cmd

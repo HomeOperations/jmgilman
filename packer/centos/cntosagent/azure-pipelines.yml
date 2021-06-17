@@ -1,0 +1,45 @@
+trigger:
+  branches:
+    include:
+      - master
+  paths:
+    include:
+      - centos/clone.pkr.hcl
+      - centos/cntosagent/*
+
+variables:
+  os: centos
+  image: cntosagent
+  type: clone
+
+jobs:
+- job: Default
+  timeoutInMinutes: 120
+  pool:
+    name: Lab
+    demands:
+      - agent.os -equals Linux
+  steps:
+  - task: AzureAppConfiguration@3
+    inputs:
+      azureSubscription: 'Lab Resource Group'
+      ConfigstoreName: 'GLabConfig'
+      KeyFilter: '*'
+      Label: 'vcenter'
+  - task: AzureAppConfiguration@3
+    inputs:
+      azureSubscription: 'Lab Resource Group'
+      ConfigstoreName: 'GLabConfig'
+      KeyFilter: '*'
+      Label: 'packer'
+  - task: PowerShell@2
+    displayName: 'Build Azure DevOps Ubuntu agent packer image'
+    inputs:
+      filePath: build.ps1
+      arguments: -Os $(os) -Image $(image) -Type $(type)
+      workingDirectory: $(Build.SourcesDirectory)/ubuntu
+      pwsh: true
+    env:
+      VCENTER_USER: $(vcenter.username)
+      VCENTER_PASS: $(vcenter.password)
+      ADMIN_PASS: $(packer.admin.password)

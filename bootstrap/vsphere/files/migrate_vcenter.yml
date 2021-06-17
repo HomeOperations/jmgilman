@@ -1,0 +1,75 @@
+---
+- name: Configure vCenter
+  hosts: localhost
+  gather_facts: no
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: Exit maintenance mode on ESXi hosts
+      community.vmware.vmware_maintenancemode:
+        esxi_hostname: "{{ item }}"
+        state: absent
+      delegate_to: localhost
+      loop: "{{ esxi.hosts | difference([vcenter.deployment.initial_host]) }}"
+    - name: Shutdown VCSA VM
+      community.vmware.vmware_guest_powerstate:
+        hostname: "{{ vcenter.deployment.initial_host }}"
+        username: "{{ lookup('env', 'ESXI_ROOT_NAME') }}"
+        password: "{{ lookup('env', 'ESXI_ROOT_PASS') }}"
+        name: "{{ vcenter.deployment.name }}"
+        state: shutdown-guest
+      delegate_to: localhost
+    - name: Pause for 2 minutes to allow shutdown
+      pause:
+        minutes: 2
+    - name: Unregister VCSA from deployment host
+      community.vmware.vmware_guest_register_operation:
+        hostname: "{{ vcenter.deployment.initial_host }}"
+        username: "{{ lookup('env', 'ESXI_ROOT_NAME') }}"
+        password: "{{ lookup('env', 'ESXI_ROOT_PASS') }}"
+        esxi_hostname: "{{ vcenter.deployment.initial_host }}"
+        name: "{{ vcenter.deployment.name }}"
+        folder: /ha-datacenter/vm
+        state: absent
+      delegate_to: localhost
+    - name: Register VCSA on host in cluster
+      community.vmware.vmware_guest_register_operation:
+        hostname: "{{ vcenter.deployment.final_host }}"
+        username: "{{ lookup('env', 'ESXI_ROOT_NAME') }}"
+        password: "{{ lookup('env', 'ESXI_ROOT_PASS') }}"
+        esxi_hostname: "{{ vcenter.deployment.final_host }}"
+        name: "{{ vcenter.deployment.name }}"
+        folder: /ha-datacenter/vm
+        path: "[iSCSI] {{ vcenter.deployment.name }}/{{ vcenter.deployment.name }}.vmx"
+        state: present
+      delegate_to: localhost
+    - name: Start VCSA VM
+      community.vmware.vmware_guest_powerstate:
+        hostname: "{{ vcenter.deployment.final_host }}"
+        username: "{{ lookup('env', 'ESXI_ROOT_NAME') }}"
+        password: "{{ lookup('env', 'ESXI_ROOT_PASS') }}"
+        name: "{{ vcenter.deployment.name }}"
+        state: powered-on
+      delegate_to: localhost
+    - name: Pause for 15 minutes to allow vCenter to start
+      pause:
+        minutes: 15
+    - name: Put VCSA deployment host into maintenance mode
+      community.vmware.vmware_maintenancemode:
+        esxi_hostname: "{{ vcenter.deployment.initial_host }}"
+        state: present
+      delegate_to: localhost
+    - name: Add VCSA deployment host to cluster
+      community.vmware.vmware_host:
+        datacenter: "{{ vcenter.datacenter }}"
+        cluster: "{{ vcenter.cluster.name }}"
+        esxi_hostname: "{{ vcenter.deployment.initial_host }}"
+        esxi_username: "{{ lookup('env', 'ESXI_ROOT_NAME') }}"
+        esxi_password: "{{ lookup('env', 'ESXI_ROOT_PASS') }}"
+        state: present
+      delegate_to: localhost
+    - name: Exit maintenance mode on deployment host
+      community.vmware.vmware_maintenancemode:
+        esxi_hostname: "{{ vcenter.deployment.initial_host }}"
+        state: absent
+      delegate_to: localhost

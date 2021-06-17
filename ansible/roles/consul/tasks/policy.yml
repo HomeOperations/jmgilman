@@ -1,0 +1,37 @@
+- name: "Check if {{ item.name }} policy exists"
+  ansible.builtin.uri:
+    url: "https://127.0.0.1:8501/v1/acl/policy/name/{{ item.name }}"
+    validate_certs: no  # https://github.com/ansible/ansible/issues/75015
+    headers:
+      X-Consul-Token: "{{ token.value }}"
+  register: policy_check
+  ignore_errors: true
+  run_once: true
+- name: "Create {{ item.name }} policy"
+  ansible.builtin.uri:
+    url: "https://127.0.0.1:8501/v1/acl/policy"
+    method: PUT
+    body:
+      Name: "{{ item.name }}"
+      Description: "{{ item.desc }}"
+      Rules: "{{ lookup('template', 'files/policy.j2') }}"
+    body_format: json
+    validate_certs: no
+    headers:
+      X-Consul-Token: "{{ token.value }}"
+  run_once: true
+  when: policy_check.status == 403
+- name: "Update {{ item.name }} policy"
+  ansible.builtin.uri:
+    url: "https://127.0.0.1:8501/v1/acl/policy/{{ policy_check.json.ID }}"
+    method: PUT
+    body:
+      Name: "{{ item.name }}"
+      Description: "{{ item.desc }}"
+      Rules: "{{ lookup('template', 'files/policy.j2') }}"
+    body_format: json
+    validate_certs: no
+    headers:
+      X-Consul-Token: "{{ token.value }}"
+  run_once: true
+  when: "policy_check.status != 403 and lookup('template', 'files/policy.j2') != policy_check.json.Rules"
