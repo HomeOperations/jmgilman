@@ -45,8 +45,8 @@ Host *
     IdentityFile ~/.ssh/id_rsa
 END
 
-# Start in code dir
-cd code
+# Start in lab dir
+cd lab
 
 # Run CMD
 exec "$@"

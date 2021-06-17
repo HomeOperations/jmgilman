@@ -7,6 +7,6 @@ docker run -it \
     --network dev_default \
     -v $(pwd)/tmp/root_ca.crt:/root/.mc/certs/CAs/root_ca.crt \
     -v $(pwd)/tmp/root_ca.crt:/usr/local/share/ca-certificates/root_ca.crt \
-    -v "$HOME/code":/root/code \
+    -v "$HOME/code/lab":/root/lab \
     -e VAULT_TOKEN \
     dev

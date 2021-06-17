@@ -43,4 +43,4 @@ docker container rm vault-unseal
 echo "Linking root CA..."
 ln -s ./tmp/root_ca.crt ~/.mc/certs/CAs/root_ca.crt
 
-echo "Development environment is up! Please login to vault and then source env.sh to setup the local environment."
+echo "Development environment is up! Please login to vault and then run dev.sh to run a development container"
