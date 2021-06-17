@@ -1,0 +1,15 @@
+trigger:
+  branches:
+    include:
+      - master
+  paths:
+    include:
+      - chocolatey/veeam/*
+      - package.yml
+
+extends:
+  template: ../package.yml
+  parameters:
+    packageName: veeam
+    packageLongName: Veeam Backup & Replication
+    buildScript: buildISO.ps1

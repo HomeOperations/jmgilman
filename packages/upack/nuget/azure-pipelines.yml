@@ -1,0 +1,35 @@
+trigger:
+  branches:
+    include:
+      - master
+  paths:
+    include:
+      - upack/nuget/*
+
+jobs:
+- job: Default
+  pool:
+    name: Lab
+    demands:
+      - agent.os -equals Windows_NT
+  steps:
+  - task: AzureAppConfiguration@3
+    inputs:
+      azureSubscription: 'Lab Resource Group'
+      ConfigstoreName: 'GLabConfig'
+      KeyFilter: '*'
+      Label: 'proget'
+  - task: PowerShell@2
+    displayName: 'Build NuGet universal package'
+    inputs:
+      filePath: build.ps1
+      arguments: -ConfigFile upack/nuget/config.psd1 -BuildPath $(Agent.TempDirectory) -OutPath $(Build.StagingDirectory) -Verbose
+      pwsh: true
+  - task: PowerShell@2
+    displayName: 'Deploy NuGet universal package'
+    inputs:
+      filePath: deploy.ps1
+      arguments: -ConfigFile upack/nuget/config.psd1 -Server $(proget.server) -Feed $(proget.feeds.universal) -PackagePath $(Build.StagingDirectory) -Verbose
+      pwsh: true
+    env:
+      API_KEY: $(proget.apikey)

@@ -1,0 +1,14 @@
+trigger:
+  branches:
+    include:
+      - master
+  paths:
+    include:
+      - chocolatey/sql-2014-smo/*
+      - package.yml
+
+extends:
+  template: ../package.yml
+  parameters:
+    packageName: sql-2014-smo
+    packageLongName: Microsoft SQL Server 2014 Management Objects

@@ -1,0 +1,14 @@
+trigger:
+  branches:
+    include:
+      - master
+  paths:
+    include:
+      - chocolatey/packer-windows-update/*
+      - package.yml
+
+extends:
+  template: ../package.yml
+  parameters:
+    packageName: packer-windows-update
+    packageLongName: Packer Windows Update Plugin

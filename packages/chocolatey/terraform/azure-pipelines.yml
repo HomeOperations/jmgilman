@@ -1,0 +1,14 @@
+trigger:
+  branches:
+    include:
+      - master
+  paths:
+    include:
+      - chocolatey/terraform/*
+      - package.yml
+
+extends:
+  template: ../package.yml
+  parameters:
+    packageName: terraform
+    packageLongName: Terraform

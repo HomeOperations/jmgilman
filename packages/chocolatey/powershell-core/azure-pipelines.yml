@@ -1,0 +1,14 @@
+trigger:
+  branches:
+    include:
+      - master
+  paths:
+    include:
+      - chocolatey/powershell-core/*
+      - package.yml
+
+extends:
+  template: ../package.yml
+  parameters:
+    packageName: powershell-core
+    packageLongName: Powershell Core 7

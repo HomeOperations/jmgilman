@@ -1,0 +1,41 @@
+parameters:
+  - name: packageName
+    type: string
+    default: ''
+  - name: packageLongName
+    type: string
+    default: ''
+  - name: buildScript
+    type: string
+    default: 'build.ps1'
+  - name: deployScript
+    type: string
+    default: 'deploy.ps1'
+
+jobs:
+- job: Default
+  pool:
+    name: Lab
+    demands:
+      - agent.os -equals Windows_NT
+  steps:
+  - task: AzureAppConfiguration@3
+    inputs:
+      azureSubscription: 'Lab Resource Group'
+      ConfigstoreName: 'GLabConfig'
+      KeyFilter: '*'
+      Label: 'proget'
+  - task: PowerShell@2
+    displayName: 'Build ${{ parameters.packageLongName }} package'
+    inputs:
+      filePath: ${{ parameters.buildScript }}
+      arguments: -PackageFile chocolatey\${{ parameters.packageName }}\package.psd1 -OutPath $(Build.StagingDirectory)
+      pwsh: true
+  - task: PowerShell@2
+    displayName: 'Deploy ${{ parameters.packageLongName }} package'
+    inputs:
+      filePath: ${{ parameters.deployScript }}
+      arguments: -Repository $(proget.feeds.chocolatey) -PackagePath $(Build.StagingDirectory) -Force -Recurse
+      pwsh: true
+    env:
+      API_KEY: $(proget.apikey)
