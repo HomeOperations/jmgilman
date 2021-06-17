@@ -30,3 +30,12 @@ config:
   server:
     verify_server_hostname: true
     verify_https_client: false
+vault:
+  secrets:
+    gossip: nomad/gossip
+    tokens:
+      base: nomad/tokens
+      root: nomad/tokens/root
+  pki:
+    mount: pki_int
+    role: nomad
