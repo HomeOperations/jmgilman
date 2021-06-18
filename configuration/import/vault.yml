@@ -1,0 +1,15 @@
+import_path: vault_config
+
+services:
+  consul:
+    secrets:
+      gossip: consul/gossip
+      tokens:
+        base: consul/tokens
+        root: consul/tokens/root
+  nomad:
+    secrets:
+      gossip: nomad/gossip
+      tokens:
+        base: nomad/tokens
+        root: nomad/tokens/root
