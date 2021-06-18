@@ -1,7 +1,7 @@
 server = false
 retry_join = ["{{ config.retry_join }}"]
 bind_addr = "{{ vars['ansible_'~config.bind_int].ipv4.address }}"
-client_addr = "127.0.0.1"
+client_addr = "127.0.0.1 172.17.0.1"
 
 datacenter = "{{ config.datacenter }}"
 log_level = "{{ config.log_level }}"
