@@ -9,7 +9,9 @@
   ansible.builtin.user:
     name: "{{ service.user }}"
     group: "{{ service.group }}"
+    groups: "{{ 'docker' if not server }}"
     system: yes
+    append: yes
 - name: Create data directory
   ansible.builtin.file:
     path: "{{ path.dir.data }}"

@@ -45,3 +45,15 @@ module "nomad_clients" {
   vmgateway       = each.value.networking.gateway
   data_disk = {}
 }
+
+resource "vsphere_compute_cluster_vm_anti_affinity_rule" "nomad_servers_anti_affinity_rule" {
+  name                = "nomad_servers"
+  compute_cluster_id  = "${data.vsphere_compute_cluster.cluster.id}"
+  virtual_machine_ids = values(module.nomad_servers)[*].uuid[0]
+}
+
+resource "vsphere_compute_cluster_vm_anti_affinity_rule" "nomad_clients_anti_affinity_rule" {
+  name                = "nomad_clients"
+  compute_cluster_id  = "${data.vsphere_compute_cluster.cluster.id}"
+  virtual_machine_ids = values(module.nomad_clients)[*].uuid[0]
+}
