@@ -15,18 +15,6 @@
         name: admin
         update_password: always
         password: "{{ lookup('env', 'ADMIN_PASSWORD')|password_hash('sha512') }}"
-    - name: Purge cloud-init
-      ansible.builtin.apt:
-        name: cloud-init
-        state: absent
-        purge: yes
-    - name: Remove cloud-init directories
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: absent
-      with_items:
-        - /etc/cloud
-        - /var/lib/cloud/
     - name: Upgrade system
       ansible.builtin.apt:
         update_cache: yes
@@ -34,24 +22,10 @@
     - name: Install base packages
       ansible.builtin.apt:
         name:
-          - apt-transport-https
-          - perl
-          - software-properties-common
           - unzip
           - wget
-    - name: Download Microsoft repository
-      ansible.builtin.get_url: 
-        url: https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb
-        dest: /tmp/packages-microsoft-prod.deb
-    - name: Install Microsoft repository
-      ansible.builtin.apt:
-        deb: /tmp/packages-microsoft-prod.deb
-    - name: Enable universe repository
-      ansible.builtin.shell: add-apt-repository universe
-    - name: Install Powershell Core
-      ansible.builtin.apt:
-        update_cache: yes
-        name: powershell
+    - name: Install cloud init support
+      ansible.builtin.shell: "curl -sSL https://raw.githubusercontent.com/vmware/cloud-init-vmware-guestinfo/master/install.sh | sh -"
     - name: Add Hashicorp apt signing key
       ansible.builtin.apt_key:
         url: https://apt.releases.hashicorp.com/gpg
@@ -74,8 +48,3 @@
       ansible.builtin.copy:
         content: "{{ lookup('env', 'SSH_CA') }}"
         dest: /etc/ssh/trusted
-    - name: Fix openvmtools service # https://kb.vmware.com/s/article/59687
-      ansible.builtin.lineinfile:
-        path: /lib/systemd/system/open-vm-tools.service
-        regexp: '^After=systemd-remount-fs.service'
-        line: After=dbus.service systemd-remount-fs.service systemd-tmpfiles-setup.service systemd-modules-load.service

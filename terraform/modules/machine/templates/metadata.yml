@@ -1,0 +1,19 @@
+local-hostname: ${hostname}
+network:
+  version: 2
+  ethernets:
+  %{~ for index in range(0, length(nics)) ~}
+    ens${ 192 + (index * 32) }:
+      addresses:
+        - ${nics[index].ip}/${nics[index].netmask}
+      gateway4: ${nics[index].gateway}
+      nameservers:
+        addresses:
+        %{~ for server in dns ~}
+          - ${server ~}
+        %{~ endfor }
+        search:
+        %{~ for domain in domains ~}
+          - ${domain ~}
+        %{~ endfor }
+  %{~ endfor }

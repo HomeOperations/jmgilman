@@ -19,6 +19,13 @@ data "consul_keys" "machines" {
   }
 }
 
+data "consul_keys" "machines_test" {
+  key {
+    name = "test"
+    path = "machines/test"
+  }
+}
+
 data "consul_keys" "dns" {
   key {
     name = "dns"

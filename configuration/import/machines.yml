@@ -1,5 +1,11 @@
 import_path: machines
-
+test:
+  servers:
+    test01:
+      networking:
+        ip: 192.168.1.210
+        netmask: 24
+        gateway: 192.168.1.1
 nomad:
   servers:
     nomad01:
@@ -8,8 +14,9 @@ nomad:
           - server
           - nomad
       networking:
+        network: Prod
         ip: 192.168.1.111
-        subnet: 255.255.255.0
+        netmask: 24
         gateway: 192.168.1.1
     nomad02:
       consul:
@@ -17,8 +24,9 @@ nomad:
           - server
           - nomad
       networking:
+        network: Prod
         ip: 192.168.1.112
-        subnet: 255.255.255.0
+        netmask: 24
         gateway: 192.168.1.1
     nomad03:
       consul:
@@ -26,8 +34,9 @@ nomad:
           - server
           - nomad
       networking:
+        network: Prod
         ip: 192.168.1.113
-        subnet: 255.255.255.0
+        netmask: 24
         gateway: 192.168.1.1
   clients:
     worker01:
@@ -36,8 +45,9 @@ nomad:
           - client
           - nomad
       networking:
+        network: Prod
         ip: 192.168.1.121
-        subnet: 255.255.255.0
+        netmask: 24
         gateway: 192.168.1.1
     worker02:
       consul:
@@ -45,8 +55,9 @@ nomad:
           - client
           - nomad
       networking:
+        network: Prod
         ip: 192.168.1.122
-        subnet: 255.255.255.0
+        netmask: 24
         gateway: 192.168.1.1
     worker03:
       consul:
@@ -54,6 +65,7 @@ nomad:
           - client
           - nomad
       networking:
+        network: Prod
         ip: 192.168.1.123
-        subnet: 255.255.255.0
+        netmask: 24
         gateway: 192.168.1.1
