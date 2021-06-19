@@ -1,0 +1,9 @@
+---
+- name: Configure local system
+  import_tasks: setup.yml
+- name: Generate configuration
+  import_tasks: config.yml
+- name: Configure environment
+  import_tasks: env.yml
+- name: Configure service
+  import_tasks: service.yml

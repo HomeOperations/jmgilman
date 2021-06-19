@@ -1,19 +1,21 @@
-- name: Read gossip encryption key
-  hashivault_read:
-    secret: "{{ vault.secrets.gossip }}"
-    key: key
-    version: 2
-  register: gossip_read
+- name: Generate gossip encryption key
+  ansible.builtin.shell: consul keygen
+  register: keygen
   run_once: true
   delegate_to: localhost
 - set_fact:
-    enc_key: "{{ gossip_read.value }}"
+    enc_key: "{{ keygen.stdout }}"
+- debug:
+    msg: "{{ machines.servers.keys() | first }}"
 - name: Create server configuration
   ansible.builtin.template:
     src: files/server_config.j2
     dest: "{{ path.config }}"
     owner: "{{ service.user }}"
     group: "{{ service.group }}"
+  vars:
+    bind_addr: "{{ '{{ GetInterfaceIP \\\"' + config.bind_int + '\\\" }}' }}"
+    client_addr: "{{ '{{ GetInterfaceIP \\\"' + config.bind_int + '\\\" }}' }} 127.0.0.1"
   when: server
 - name: Create client configuration
   ansible.builtin.template:

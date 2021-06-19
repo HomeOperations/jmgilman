@@ -1,8 +1,8 @@
 server = true
-bootstrap_expect = {{ ansible_play_hosts | length }}
-retry_join = ["{{ config.retry_join }}"]
-bind_addr = "{{ vars['ansible_'~config.bind_int].ipv4.address }}"
-client_addr = "{{ vars['ansible_'~config.bind_int].ipv4.address }} 127.0.0.1"
+bootstrap_expect = {{ machines.servers | length }}
+retry_join = ["{{ machines.servers.keys() | first }}.{{ external_domain }}"]
+bind_addr = "{{ bind_addr }}"
+client_addr = "{{ client_addr }}"
 
 datacenter = "{{ config.datacenter }}"
 log_level = "{{ config.log_level }}"

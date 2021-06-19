@@ -26,6 +26,11 @@ variable "ansible_playbook" {
     type = string
 }
 
+variable "ansible_tags" {
+    type = string
+    default = "all"
+}
+
 variable "vsphere_server" {
     type = object({
         address = string
@@ -45,6 +50,7 @@ variable "vsphere_vm" {
     type = object({
         name = string
         hostname = string
+        domain = string
         template = string
         cpus = number
         memory = number
@@ -78,13 +84,14 @@ source "vsphere-clone" "clone_base" {
   RAM     = var.vsphere_vm.memory
   convert_to_template = true
 
-  configuration_parameters = {
-      "guestinfo.metadata" = base64encode(templatefile("metadata.yml",
-      {
-        hostname = var.vsphere_vm.hostname
+  customize {
+      linux_options {
+          host_name = var.vsphere_vm.hostname
+          domain = var.vsphere_vm.domain
       }
-    ))
-    "guestinfo.metadata.encoding" = "base64"
+      network_interface {
+
+      }
   }
 
   disk_controller_type = ["pvscsi"]
@@ -103,5 +110,9 @@ build {
   provisioner "ansible" {
       playbook_file = var.ansible_playbook
       user = "admin"
+      extra_arguments = [
+          "--tags",
+          "'${var.ansible_tags}'"
+      ]
   }
 }

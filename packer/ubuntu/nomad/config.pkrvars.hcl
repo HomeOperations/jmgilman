@@ -1,4 +1,4 @@
-ansible_playbook = "ubagent/playbook.yml"
+ansible_playbook = "nomad/playbook.yml"
 
 vsphere_server = {
     address = "vcenter.gilman.io"
@@ -12,16 +12,11 @@ vsphere_vcenter = {
 }
 
 vsphere_vm = {
-    name = "UBAgent"
-    hostname = "ubtest"
+    name = "UBNomad"
+    hostname = "ubnomad"
     template = "UB2004"
     cpus = 4
-    memory = 8192
-    disks = [
-        {
-            size = 40960
-            thin = true
-        }
-    ]
+    memory = 4192
+    disks = []
     network = "Dev"
 }

@@ -14,7 +14,7 @@ RUN apt upgrade -y
 
 # Install base tools
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata
-RUN apt install -y ca-certificates git jq iputils-ping ssh unzip wget
+RUN apt install -y ca-certificates git jq iputils-ping ssh unzip wget nano rsync
 
 # Install Consul
 RUN wget https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_amd64.zip -O /tmp/consul.zip

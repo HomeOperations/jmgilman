@@ -1,0 +1,32 @@
+---
+- name: Configure Consul server
+  hosts: all
+  become: yes
+  vars:
+    server: true
+  vars_files:
+    - ../../../ansible/vars/consul.yml
+  tasks:
+    - name: Configure Consul server
+      import_role:
+        name: ../../../ansible/roles/consul
+        tasks_from: image
+    - name: Install pip
+      ansible.builtin.apt:
+        name: python3-pip
+    - name: Install Ansible and dependencies
+      ansible.builtin.pip:
+        name:
+          - ansible
+          - jmespath
+          - pyyaml
+          - python-consul
+          - ansible-modules-hashivault
+    - name: Create ansible directory
+      ansible.builtin.file:
+        path: /opt/ansible
+        state: directory
+    - name: Copy ansible files
+      ansible.posix.synchronize:
+        src: ../../../ansible
+        dest: /opt/ansible
