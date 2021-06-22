@@ -18,3 +18,5 @@ pki:
         allowed_domains: "{{ nomad.region }}.nomad, {{ dns.domain }}"
         allow_subdomains: true
         max_ttl: 2160h
+policies:
+  - bootstrap

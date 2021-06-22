@@ -5,8 +5,6 @@
   delegate_to: localhost
 - set_fact:
     enc_key: "{{ keygen.stdout }}"
-- debug:
-    msg: "{{ machines.servers.keys() | first }}"
 - name: Create server configuration
   ansible.builtin.template:
     src: files/server_config.j2

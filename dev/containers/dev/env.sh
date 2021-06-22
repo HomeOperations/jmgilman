@@ -47,6 +47,14 @@ export NOMAD_CACERT="$HOME/.nomad/ca.pem"
 export NOMAD_CLIENT_CERT="$HOME/.nomad/cert.pem"
 export NOMAD_CLIENT_KEY="$HOME/.nomad/key.pem"
 
+# Cloudflare
+export CF_API_EMAIL=$(vault kv get -field=email secret/cloudflare)
+export CF_API_KEY=$(vault kv get -field=key secret/cloudflare)
+export CF_API_DOMAIN=$(consul kv get network/dns | jq -r .domain)
+
+# Set boostrap DNS entry to current host address
+cfcli -t A edit $(consul kv get bootstrap/hostname) $HOST_IP > /dev/null
+
 # Generate and sign SSH keypair
 ssh-keygen -t ed25519 -f ~/.ssh/id_rsa -q -N ""
 vssh --only-sign > /dev/null

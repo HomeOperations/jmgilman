@@ -48,3 +48,13 @@
       ansible.builtin.copy:
         content: "{{ lookup('env', 'SSH_CA') }}"
         dest: /etc/ssh/trusted
+    - name: Remove default netplan and cloud-init configs
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - /etc/netplan/00-installer-config.yaml
+        - /etc/cloud/cloud.cfg.d/90_dpkg.cfg
+        - /etc/cloud/cloud.cfg.d/99-installer.cfg
+        - /etc/cloud/cloud.cfg.d/curtin-preserve-sources.cfg
+        - /etc/cloud/cloud.cfg.d/subiquity-disable-cloudinit-networking.cfg

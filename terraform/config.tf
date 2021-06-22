@@ -1,7 +1,25 @@
+data "consul_keys" "bootstrap" {
+  key {
+    name = "hostname"
+    path = "bootstrap/hostname"
+  }
+}
+
 data "consul_keys" "consul" {
   key {
     name = "config"
     path = "consul/config"
+  }
+  key {
+    name = "acl"
+    path = "consul/acl"
+  }
+}
+
+data "consul_keys" "dns" {
+  key {
+    name = "dns"
+    path = "network/dns"
   }
 }
 
@@ -14,22 +32,12 @@ data "consul_keys" "nomad" {
 
 data "consul_keys" "machines" {
   key {
-    name = "nomad"
-    path = "machines/nomad"
+    name = "hashi"
+    path = "machines/hashi"
   }
-}
-
-data "consul_keys" "machines_test" {
   key {
-    name = "test"
-    path = "machines/test"
-  }
-}
-
-data "consul_keys" "dns" {
-  key {
-    name = "dns"
-    path = "network/dns"
+    name = "worker"
+    path = "machines/worker"
   }
 }
 

@@ -9,4 +9,5 @@ docker run -it \
     -v $(pwd)/tmp/root_ca.crt:/usr/local/share/ca-certificates/root_ca.crt \
     -v "$HOME/code/lab":/root/lab \
     -e VAULT_TOKEN \
+    -e HOST_IP=$(ifconfig en0 | grep "inet " | cut -d " " -f2) \
     dev

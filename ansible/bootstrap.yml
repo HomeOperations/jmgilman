@@ -1,0 +1,304 @@
+---
+- name: Register and wait for bootstrap
+  hosts: localhost
+  vars:
+    hashi: "{{ lookup('community.general.consul_kv', 'bootstrap/hashi') }}"
+  tasks:
+    - name: Set node ready for bootstrapping
+      community.general.consul_kv:
+        key: "{{ hashi.paths.nodes }}/{{ ansible_hostname }}/ready"
+        value: 1
+    - name: Wait for all nodes to be ready for bootstrapping
+      community.general.consul_kv:
+        key: "{{ hashi.paths.nodes }}/ready"
+      register: ready
+      until: (ready.data.Value | default(0) | int) == 1
+      retries: 30
+      delay: 10
+
+- name: Save AppRole credentials
+  hosts: localhost
+  vars:
+    vault:
+      agent: "{{ lookup('community.general.consul_kv', 'vault/config/agent') }}"
+    consul:
+      service: "{{ lookup('community.general.consul_kv', 'consul/service') }}"
+    hashi: "{{ lookup('community.general.consul_kv', 'bootstrap/hashi') }}"
+    service_group: "{{ lookup('community.general.consul_kv', 'common/service_group') }}"
+    tokens:
+      role: "{{ lookup('community.general.consul_kv', hashi.paths.nodes + '/' + ansible_hostname + '/tokens/role_id') }}"
+      secret: "{{ lookup('community.general.consul_kv', hashi.paths.nodes + '/' + ansible_hostname + '/tokens/secret_id') }}"
+  tasks:
+    - name: Validate role ID wrapped token
+      hashivault_write:
+        secret: wrapping/lookup
+        mount_point: sys
+        data:
+          token: "{{ tokens.role }}"
+      register: role_lookup
+      failed_when: role_lookup.data.data.creation_path != ('auth/approle/role/' + ansible_hostname + '/role-id')
+      changed_when: false
+    - name: Validate secret ID wrapped token
+      hashivault_write:
+        secret: wrapping/lookup
+        mount_point: sys
+        data:
+          token: "{{ tokens.secret }}"
+      register: secret_lookup
+      failed_when: secret_lookup.data.data.creation_path != ('auth/approle/role/' + ansible_hostname + '/secret-id')
+      changed_when: false
+    - name: Unwrap role ID wrapped token
+      hashivault_write:
+        secret:  wrapping/unwrap
+        mount_point: sys
+        data: {}
+      register: role_id_unwrapped
+      environment:
+        VAULT_TOKEN: "{{ tokens.role }}"
+    - name: Unwrap secret ID wrapped token
+      hashivault_write:
+        secret:  wrapping/unwrap
+        mount_point: sys
+        data: {}
+      register: secret_id_unwrapped
+      environment:
+        VAULT_TOKEN: "{{ tokens.secret }}"
+    - name: Write role ID to filesystem
+      ansible.builtin.copy:
+        content: "{{ role_id_unwrapped.data.data.role_id }}"
+        dest: "{{ vault.agent.path.id.role }}"
+        owner: "{{ vault.agent.service.user }}"
+        group: "{{ vault.agent.service.group }}"
+        mode: 660
+    - name: Write secret ID to filesystem
+      ansible.builtin.copy:
+        content: "{{ secret_id_unwrapped.data.data.secret_id }}"
+        dest: "{{ vault.agent.path.id.secret }}"
+        owner: "{{ vault.agent.service.user }}"
+        group: "{{ vault.agent.service.group }}"
+        mode: 660
+
+- name: Configure Vault agent
+  hosts: localhost
+  vars:
+    consul:
+      config: "{{ lookup('community.general.consul_kv', 'consul/config') }}"
+      path: "{{ lookup('community.general.consul_kv', 'consul/path') }}"
+    external_domain: "{{ (lookup('community.general.consul_kv', 'network/dns') | from_json).domain }}"
+    service_group: "{{ lookup('community.general.consul_kv', 'common/service_group') }}"
+    vault:
+      agent: "{{ lookup('community.general.consul_kv', 'vault/config/agent') }}"
+  tasks:
+    - name: Generate Vault agent config
+      import_role:
+        name: vault
+        tasks_from: agent
+      vars:
+        agent: "{{ vault.agent }}"
+        agent_config_template: templates/vault_agent.hcl.j2
+        alt_names: "{{ ansible_hostname }}.{{ external_domain }},localhost,server.{{ consul.config.datacenter }}.consul"
+        common_name: "{{ ansible_hostname }}.{{ consul.config.datacenter }}.consul"
+        ip_sans: "{{ ansible_all_ipv4_addresses | join(',') }},127.0.0.1"
+        ttl: "{{ vault.agent.cert.ttl }}"
+    - name: Run Vault agent once to generate certificates
+      ansible.builtin.shell: "vault agent --config {{ vault.agent.path.config }} -exit-after-auth"
+
+# - name: Bootstrap Consul cluster
+#   hosts: localhost
+#   tasks:
+#     - name: Enable and start Consul service
+#       ansible.builtin.service:
+#         name: consul
+#         enabled: yes
+#         state: started
+
+# - name: Sign certificates
+#   hosts: localhost
+#   become: yes
+#   vars:
+#     server: true
+#   vars_files:
+#     - vars/consul.yml
+#   roles:
+#     - consul
+
+# - name: Bootstrap cluster and ACL system
+#   hosts: localhost
+#   become: yes
+#   vars_files:
+#     - vars/consul.yml
+#   tags:
+#     - always
+#   tasks:
+#     - set_fact:
+#         nodes: "{{ lookup('env', 'NODES') | split(',') }}"
+#     - name: Set node ready for bootstrapping
+#       community.general.consul_kv:
+#         key: "bootstrap/{{ ansible_hostname }}/ready"
+#         value: 1
+#     - name: Wait for all nodes to be ready for bootstrapping
+#       community.general.consul_kv:
+#         key: bootstrap/ready
+#       register: ready
+#       until: (ready.data.Value | default(0) | int) == 1
+#       retries: 30
+#       delay: 10
+#     - name: Enable and start Consul service
+#       ansible.builtin.service:
+#         name: consul
+#         enabled: yes
+#         state: started
+#     - block:
+#         - name: Wait for leader election
+#           ansible.builtin.wait_for:
+#             path: /var/log/syslog
+#             search_regex: "^[A-Z][a-z]{2} [0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} {{ ansible_hostname }} consul\\[[0-9]*\\]:.*\\[INFO\\]  agent.server: New leader elected: payload"
+#             state: present
+#         - ansible.builtin.pause:
+#             seconds: 30
+#         - name: Create the bootstrap token
+#           ansible.builtin.shell: consul acl bootstrap -format=json
+#           register: token_resp
+#           environment:
+#             CONSUL_HTTP_ADDR: https://127.0.0.1:8501
+#             CONSUL_CACERT: "{{ path.cert.ca }}"
+#             CONSUL_CLIENT_CERT: "{{ path.cert.client }}"
+#             CONSUL_CLIENT_KEY: "{{ path.key.client }}"
+#         - set_fact:
+#             token: "{{ token_resp.stdout | from_json }}"
+#         - name: Write root token
+#           hashivault_secret:
+#             secret:  "{{ vault.secrets.tokens.root }}"
+#             data:
+#               accessor: "{{ token.AccessorID }}"
+#               secret: "{{ token.SecretID }}"
+#         - name: Export bootstrap Consul KV store
+#           ansible.builtin.shell: consul kv export > /tmp/export.json
+#           register: consul_export
+#         - name: Import into prod Consul KV store
+#           ansible.builtin.shell: consul kv import @/tmp/export.json
+#           environment:
+#             CONSUL_HTTP_ADDR: https://127.0.0.1:8501
+#             CONSUL_CACERT: "{{ path.cert.ca }}"
+#             CONSUL_CLIENT_CERT: "{{ path.cert.client }}"
+#             CONSUL_CLIENT_KEY: "{{ path.key.client }}"
+#             CONSUL_HTTP_TOKEN: "{{ token.SecretID }}"
+#         - name: Remove export file
+#           ansible.builtin.file:
+#             path: /tmp/export.json
+#             state: absent
+#         - name: Generate client certificate for Consul secrets engine
+#           hashivault_pki_cert_issue:
+#             mount_point: "{{ vault.pki.mount }}"
+#             role: "{{ vault.pki.role }}"
+#             common_name: "vault.{{ config.datacenter }}.consul"
+#           register: vault_cert
+#         - name: Configure Consul secrets engine
+#           hashivault_write:
+#             secret: config/access
+#             mount_point: consul
+#             data:
+#               address: "https://{{ ansible_hostname }}.{{ external_domain }}:8501"
+#               token: "{{ token.SecretID }}"
+#               ca_cert: "{{ vault_cert.data.issuing_ca }}"
+#               client_cert: "{{ vault_cert.data.certificate }}"
+#               client_key: "{{ vault_cert.data.private_key }}"
+#         - name: Set ACL system ready
+#           community.general.consul_kv:
+#             key: bootstrap/acl_ready
+#             value: 1
+#       when: ansible_hostname == nodes[0] # Only attempt ACL bootstrap on one node
+#     - block:
+#       - name: Wait for ACL system to be ready
+#         community.general.consul_kv:
+#           key: bootstrap/acl_ready
+#         register: acl_ready
+#         until: (acl_ready.data.Value | default(0) | int) == 1
+#         retries: 30
+#         delay: 10
+#       - ansible.builtin.pause:
+#           seconds: 10
+#       when: ansible_hostname != nodes[0] # All other nodes wait for ACL bootstrap
+
+# - name: Create and assign ACL node tokens
+#   hosts: localhost
+#   become: yes
+#   vars_files:
+#     - vars/consul.yml
+#   tags:
+#     - always
+#   tasks:
+#     - name: Read Consul root token
+#       hashivault_read:
+#         secret: "{{ vault.secrets.tokens.root }}"
+#         key: secret
+#         version: 2
+#       register: token
+#     - debug: token
+#     - name: Create node policy
+#       include_role:
+#         name: consul
+#         tasks_from: policy
+#       with_items:
+#         - name: "{{ ansible_hostname }}"
+#           desc: "{{ ansible_hostname }} node policy"
+#           rules:
+#             - resource: node
+#               segment: "{{ ansible_hostname }}"
+#               policy: write
+#             - resource: node_prefix
+#               segment:
+#               policy: read
+#             - resource: agent_prefix
+#               segment:
+#               policy: write
+#             - resource: session_prefix
+#               segment: 
+#               policy: read
+#             - resource: service_prefix
+#               segment:
+#               policy: read
+#             - resource: service
+#               segment: nomad
+#               policy: write
+#             - resource: service
+#               segment: vault
+#               policy: write
+#     - name: Create Vault role with node policy
+#       hashivault_write:
+#         secret: "roles/{{ ansible_hostname }}"
+#         mount_point: consul
+#         data:
+#           policies: "{{ ansible_hostname }}"
+#           ttl: 768h
+#           max_ttl: 768h
+#     - name: Generate agent token
+#       hashivault_read:
+#         secret: "creds/{{ ansible_hostname }}"
+#         mount_point: consul
+#         key: token
+#       register: consul_token
+#     - name: Apply default token
+#       ansible.builtin.shell: |
+#         consul acl set-agent-token \
+#           default "{{ consul_token.value }}"
+#       environment:
+#         CONSUL_HTTP_ADDR: https://127.0.0.1:8501
+#         CONSUL_CACERT: "{{ path.cert.ca }}"
+#         CONSUL_CLIENT_CERT: "{{ path.cert.client }}"
+#         CONSUL_CLIENT_KEY: "{{ path.key.client }}"
+#         CONSUL_HTTP_TOKEN: "{{ token.value }}"
+#     - name: Apply agent token
+#       ansible.builtin.shell: |
+#         consul acl set-agent-token \
+#           agent "{{ consul_token.value }}"
+#       environment:
+#         CONSUL_HTTP_ADDR: https://127.0.0.1:8501
+#         CONSUL_CACERT: "{{ path.cert.ca }}"
+#         CONSUL_CLIENT_CERT: "{{ path.cert.client }}"
+#         CONSUL_CLIENT_KEY: "{{ path.key.client }}"
+#         CONSUL_HTTP_TOKEN: "{{ token.value }}"
+#     - name: Set node completed
+#       community.general.consul_kv:
+#         key: "bootstrap/{{ ansible_hostname }}_complete"
+#         value: 1

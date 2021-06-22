@@ -1,0 +1,6 @@
+import_path: bootstrap
+
+hostname: bootstrap
+hashi:
+  paths: 
+    nodes: bootstrap/nodes

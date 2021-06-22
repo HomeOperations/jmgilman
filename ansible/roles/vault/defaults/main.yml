@@ -1,3 +1,20 @@
 ---
+agent:
+  present: true
+  cert:
+    ttl: 24h
+  service:
+    user: vault
+    group: vault
+  path:
+    config: /etc/vault.d/agent.hcl
+    dir:
+      config: /etc/vault.d
+      autoauth: /opt/autoauth
+    id:
+      role: /opt/autoauth/role_id
+      secret: /opt/autoauth/secret_id
+      token: /opt/autoauth/token
 pki:
   roles: []
+policies: []

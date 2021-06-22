@@ -1,0 +1,6 @@
+---
+- name: Create policies
+  hashivault_policy:
+    name: "{{ item }}"
+    rules_file: "roles/vault/files/policies/{{ item }}.hcl"
+  with_items: "{{ policies }}"

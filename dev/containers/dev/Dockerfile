@@ -78,6 +78,10 @@ RUN add-apt-repository universe
 RUN apt install -y powershell
 RUN pwsh -C Install-Module -Name VMware.PowerCLI -Force
 
+# Install CloudFlare CLI tool
+RUN apt install -y nodejs npm
+RUN npm install -g cloudflare-cli
+
 WORKDIR /root
 COPY containers/dev/env.sh .
 COPY containers/dev/vssh.yml .vssh

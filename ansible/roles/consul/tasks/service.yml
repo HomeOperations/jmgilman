@@ -2,8 +2,3 @@
   ansible.builtin.template:
     src: files/service.j2
     dest: /lib/systemd/system/consul.service
-- name: Enable Consul service
-  ansible.builtin.service:
-    name: consul
-    enabled: yes
-  register: service

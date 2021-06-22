@@ -1,0 +1,82 @@
+vault {
+  address = "https://127.0.0.1:8200"
+  retry {
+    num_retries = -1
+  }
+}
+
+auto_auth {
+  method "approle" {
+    config = {
+      role_id_file_path = "{{ agent.path.id.role }}"
+      secret_id_file_path = "{{ agent.path.id.secret }}"
+      remove_secret_id_file_after_reading = false
+    }
+  }
+
+  sink "file" {
+    config = {
+      path = "{{ agent.path.id.token }}"
+    }
+  }
+}
+
+template {
+  destination = "{{ consul.path.cert.ca }}"
+  contents = <<EOT
+{% raw %}{{ with secret "pki_int/issue/consul" "common_name={% endraw %}{{ common_name }}{% raw %}" "ttl={% endraw %}{{ ttl }}{% raw %}" "alt_names={% endraw %}{{ alt_names }}{% raw %}" "ip_sans={% endraw %}{{ ip_sans }}{% raw %}" }}{% endraw %}
+
+{% raw %}{{ .Data.issuing_ca }}{% endraw %}
+
+{% raw %}{{ end }}{% endraw %}
+
+EOT
+}
+
+template {
+  destination = "{{ consul.path.cert.server }}"
+  contents = <<EOT
+{% raw %}{{ with secret "pki_int/issue/consul" "common_name={% endraw %}{{ common_name }}{% raw %}" "ttl={% endraw %}{{ ttl }}{% raw %}" "alt_names={% endraw %}{{ alt_names }}{% raw %}" "ip_sans={% endraw %}{{ ip_sans }}{% raw %}" }}{% endraw %}
+
+{% raw %}{{ .Data.certificate }}{% endraw %}
+
+{% raw %}{{ end }}{% endraw %}
+
+EOT
+}
+
+template {
+  destination = "{{ consul.path.key.server }}"
+  contents = <<EOT
+{% raw %}{{ with secret "pki_int/issue/consul" "common_name={% endraw %}{{ common_name }}{% raw %}" "ttl={% endraw %}{{ ttl }}{% raw %}" "alt_names={% endraw %}{{ alt_names }}{% raw %}" "ip_sans={% endraw %}{{ ip_sans }}{% raw %}" }}{% endraw %}
+
+{% raw %}{{ .Data.private_key }}{% endraw %}
+
+{% raw %}{{ end }}{% endraw %}
+
+EOT
+}
+
+template {
+  destination = "{{ consul.path.cert.client }}"
+  contents = <<EOT
+{% raw %}{{ with secret "pki_int/issue/consul" "common_name={% endraw %}cli.{{ common_name }}{% raw %}" "ttl={% endraw %}{{ ttl }}{% raw %}" "ip_sans={% endraw %}{{ ip_sans }}{% raw %}" }}{% endraw %}
+
+{% raw %}{{ .Data.certificate }}{% endraw %}
+
+{% raw %}{{ end }}{% endraw %}
+
+EOT
+}
+
+template {
+  destination = "{{ consul.path.key.client }}"
+  contents = <<EOT
+{% raw %}{{ with secret "pki_int/issue/consul" "common_name={% endraw %}cli.{{ common_name }}{% raw %}" "ttl={% endraw %}{{ ttl }}{% raw %}" "ip_sans={% endraw %}{{ ip_sans }}{% raw %}" }}{% endraw %}
+
+{% raw %}{{ .Data.private_key }}{% endraw %}
+
+{% raw %}{{ end }}{% endraw %}
+
+EOT
+}

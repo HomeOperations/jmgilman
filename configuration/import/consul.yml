@@ -46,6 +46,8 @@ acl:
         - resource: session_prefix
           segment: 
           policy: read
+  tokens:
+    master: 49bc9621-58f2-4b9a-b1b8-c03754bf57bc
 config:
   bind_int: ens192
   datacenter: gilman
@@ -72,6 +74,9 @@ path:
   key:
     server: /etc/consul.d/server_key.pem
     client: /etc/consul.d/client_key.pem
+service:
+  user: consul
+  group: consul
 vault:
   secrets:
     gossip: consul/gossip
@@ -81,6 +86,3 @@ vault:
   pki:
     mount: pki_int
     role: consul
-service:
-  user: consul
-  group: consul

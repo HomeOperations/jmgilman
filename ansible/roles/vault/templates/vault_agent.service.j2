@@ -1,0 +1,18 @@
+[Unit]
+Description="HashiCorp Vault Agent"
+Documentation=https://www.vaultproject.io/docs/agent
+Requires=network-online.target
+After=network-online.target
+ConditionFileNotEmpty={{ agent.path.config }}
+
+[Service]
+Type=simple
+User={{ agent.service.user }}
+Group={{ agent.service.group }}
+ExecStart=/usr/bin/vault agent -config={{ agent.path.config }}
+KillMode=process
+Restart=on-failure
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

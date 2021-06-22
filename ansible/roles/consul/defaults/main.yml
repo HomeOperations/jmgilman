@@ -36,6 +36,9 @@ path:
   key:
     server: /etc/consul.d/server_key.pem
     client: /etc/consul.d/client_key.pem
+service:
+  user: consul
+  group: consul
 vault:
   secrets:
     gossip: consul/gossip
@@ -45,6 +48,3 @@ vault:
   pki:
     mount: pki_int
     role: consul
-service:
-  user: consul
-  group: consul

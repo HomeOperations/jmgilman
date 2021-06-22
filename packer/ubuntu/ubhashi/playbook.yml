@@ -29,4 +29,15 @@
     - name: Copy ansible files
       ansible.posix.synchronize:
         src: ../../../ansible
-        dest: /opt/ansible
+        dest: /opt
+
+- name: Configure Vault agent
+  hosts: all
+  become: yes
+  vars:
+    agent: "{{ lookup('community.general.consul_kv', 'vault/config/agent') }}"
+  tasks:
+    - name: Configure Vault agent
+      import_role:
+        name: ../../../ansible/roles/vault
+        tasks_from: agent

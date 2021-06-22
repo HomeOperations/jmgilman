@@ -2,4 +2,7 @@ external_domain: "{{ (lookup('community.general.consul_kv', 'network/dns') | fro
 tls: "{{ lookup('community.general.consul_kv', 'consul/tls') }}"
 acl: "{{ lookup('community.general.consul_kv', 'consul/acl') }}"
 config: "{{ lookup('community.general.consul_kv', 'consul/config') }}"
-machines: "{{ lookup('community.general.consul_kv', 'machines/nomad') }}"
+path: "{{ lookup('community.general.consul_kv', 'consul/path') }}"
+service: "{{ lookup('community.general.consul_kv', 'consul/service') }}"
+vault: "{{ lookup('community.general.consul_kv', 'consul/vault') }}"
+machines: "{{ lookup('community.general.consul_kv', 'machines/hashi') }}"

@@ -138,4 +138,8 @@ resource "vsphere_virtual_machine" "vm" {
     "guestinfo.userdata" = base64encode(var.script)
     "guestinfo.userdata.encoding" = "base64"
   }
+
+  lifecycle {
+    ignore_changes = [extra_config]
+  }
 }

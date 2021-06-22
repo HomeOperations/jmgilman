@@ -1,0 +1,34 @@
+---
+- name: Create service group
+  ansible.builtin.group:
+    name: "{{ agent.service.group }}"
+    system: yes
+- name: Create service user
+  ansible.builtin.user:
+    name: "{{ agent.service.user }}"
+    group: "{{ agent.service.user }}"
+    system: yes
+- name: Create Vault agent config directory
+  ansible.builtin.file:
+    path: "{{ agent.path.dir.config }}"
+    state: directory
+    owner: "{{ agent.service.user }}"
+    group: "{{ agent.service.group }}"
+- name: Create Vault agent auto-auth directory
+  ansible.builtin.file:
+    path: "{{ agent.path.dir.autoauth }}"
+    state: directory
+    owner: "{{ agent.service.user }}"
+    group: "{{ agent.service.group }}"
+    mode: 660
+- name: Generate Vault agent service file
+  ansible.builtin.template:
+    src: templates/vault_agent.service.j2
+    dest: /lib/systemd/system/vault-agent.service
+- name: Generate Vault agent config
+  ansible.builtin.template:
+    src: "{{ agent_config_template }}"
+    dest: "{{ vault.agent.path.config }}"
+    owner: "{{ vault.agent.service.user }}"
+    group: "{{ agent.service.group }}"
+  when: agent_config_template is defined

@@ -1,71 +1,64 @@
 import_path: machines
-test:
-  servers:
-    test01:
-      networking:
-        ip: 192.168.1.210
-        netmask: 24
-        gateway: 192.168.1.1
-nomad:
-  servers:
-    nomad01:
-      consul:
-        roles:
-          - server
-          - nomad
-      networking:
-        network: Prod
-        ip: 192.168.1.111
-        netmask: 24
-        gateway: 192.168.1.1
-    nomad02:
-      consul:
-        roles:
-          - server
-          - nomad
-      networking:
-        network: Prod
-        ip: 192.168.1.112
-        netmask: 24
-        gateway: 192.168.1.1
-    nomad03:
-      consul:
-        roles:
-          - server
-          - nomad
-      networking:
-        network: Prod
-        ip: 192.168.1.113
-        netmask: 24
-        gateway: 192.168.1.1
-  clients:
-    worker01:
-      consul:
-        roles:
-          - client
-          - nomad
-      networking:
-        network: Prod
-        ip: 192.168.1.121
-        netmask: 24
-        gateway: 192.168.1.1
-    worker02:
-      consul:
-        roles:
-          - client
-          - nomad
-      networking:
-        network: Prod
-        ip: 192.168.1.122
-        netmask: 24
-        gateway: 192.168.1.1
-    worker03:
-      consul:
-        roles:
-          - client
-          - nomad
-      networking:
-        network: Prod
-        ip: 192.168.1.123
-        netmask: 24
-        gateway: 192.168.1.1
+
+hashi:
+  hashi01:
+    consul:
+      roles:
+        - server
+        - nomad
+    networking:
+      network: Prod
+      ip: 192.168.1.111
+      netmask: 24
+      gateway: 192.168.1.1
+  hashi02:
+    consul:
+      roles:
+        - server
+        - nomad
+    networking:
+      network: Prod
+      ip: 192.168.1.112
+      netmask: 24
+      gateway: 192.168.1.1
+  hashi03:
+    consul:
+      roles:
+        - server
+        - nomad
+    networking:
+      network: Prod
+      ip: 192.168.1.113
+      netmask: 24
+      gateway: 192.168.1.1
+workers:
+  worker01:
+    consul:
+      roles:
+        - client
+        - nomad
+    networking:
+      network: Prod
+      ip: 192.168.1.121
+      netmask: 24
+      gateway: 192.168.1.1
+  worker02:
+    consul:
+      roles:
+        - client
+        - nomad
+    networking:
+      network: Prod
+      ip: 192.168.1.122
+      netmask: 24
+      gateway: 192.168.1.1
+  worker03:
+    consul:
+      roles:
+        - client
+        - nomad
+    networking:
+      network: Prod
+      ip: 192.168.1.123
+      netmask: 24
+      gateway: 192.168.1.1

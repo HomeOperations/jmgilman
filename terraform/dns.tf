@@ -4,16 +4,8 @@ data "cloudflare_zones" "gilman" {
   }
 }
 
-resource "cloudflare_record" "nomad_servers" {
-  for_each = jsondecode(data.consul_keys.machines.var.nomad)["servers"]
-  zone_id = data.cloudflare_zones.gilman.zones[0].id
-  name    = each.key
-  value   = each.value.networking.ip
-  type    = "A"
-}
-
-resource "cloudflare_record" "nomad_clients" {
-  for_each = jsondecode(data.consul_keys.machines.var.nomad)["clients"]
+resource "cloudflare_record" "hashi_nodes" {
+  for_each = jsondecode(data.consul_keys.machines.var.hashi)
   zone_id = data.cloudflare_zones.gilman.zones[0].id
   name    = each.key
   value   = each.value.networking.ip

@@ -1,4 +1,4 @@
-ansible_playbook = "nomad/playbook.yml"
+ansible_playbook = "ubhashi/playbook.yml"
 
 vsphere_server = {
     address = "vcenter.gilman.io"
@@ -12,8 +12,8 @@ vsphere_vcenter = {
 }
 
 vsphere_vm = {
-    name = "UBNomad"
-    hostname = "ubnomad"
+    name = "UBHashi"
+    hostname = "ubhashi"
     template = "UB2004"
     cpus = 4
     memory = 4192

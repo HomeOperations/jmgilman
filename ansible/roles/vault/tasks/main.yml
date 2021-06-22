@@ -1,3 +1,5 @@
 ---
 - name: Configure PKI endpoint
   import_tasks: pki.yml
+- name: Configure policies
+  import_tasks: policy.yml

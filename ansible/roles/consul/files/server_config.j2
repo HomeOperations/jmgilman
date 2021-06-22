@@ -1,6 +1,6 @@
 server = true
-bootstrap_expect = {{ machines.servers | length }}
-retry_join = ["{{ machines.servers.keys() | first }}.{{ external_domain }}"]
+bootstrap_expect = {{ machines | length }}
+retry_join = ["{{ machines.keys() | first }}.{{ external_domain }}"]
 bind_addr = "{{ bind_addr }}"
 client_addr = "{{ client_addr }}"
 
@@ -28,6 +28,11 @@ acl = {
   enabled = true
   default_policy = "{{ acl.default_policy }}"
   enable_token_persistence = true
+{% if acl.tokens.master is defined %}
+  tokens {
+    master = "{{ acl.tokens.master }}"
+  }
+{% endif %}
 }
 {% endif %}
 
