@@ -1,0 +1,9 @@
+---
+- name: Lookup mount accessor ID
+  hashivault_auth_list:
+  register: 'auth_list'
+- name: Create group alias
+  hashivault_identity_group_alias:
+    name: "{{ item.key }}"
+    group_name: "{{ item.value.group }}"
+    mount_accessor: "{{ auth_list['backends'][item.value.backend + '/']['accessor'] }}"

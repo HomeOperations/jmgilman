@@ -1,5 +1,3 @@
-import_path: vault/config
-
 agent:
   present: true
   cert:
@@ -16,16 +14,118 @@ agent:
       role: /opt/autoauth/role_id
       secret: /opt/autoauth/secret_id
       token: /opt/autoauth/token
-services:
-  consul:
+auth:
+  groups:
+    admin:
+      type: external
+      policies:
+        - admin
+  groups_alias:
+    admin:
+      group: admin
+      backend: oidc
+  oidc:
+    enabled: true
+    default_role: default
+    creds:
+      domain: vault/auth0/creds:domain
+      id: vault/auth0/creds:id
+      secret: vault/auth0/creds:secret
+    roles:
+      admin:
+        allowed_redirect_uris: 
+          - https://localhost:8200/ui/vault/auth/oidc/oidc/callback
+          - http://localhost:8250/oidc/callback
+        token_policies:
+          - default
+        user_claim: sub
+engines:
+  kv:
+    import: true
     secrets:
-      gossip: consul/gossip
-      tokens:
-        base: consul/tokens
-        root: consul/tokens/root
-  nomad:
-    secrets:
-      gossip: nomad/gossip
-      tokens:
-        base: nomad/tokens
-        root: nomad/tokens/root
+      - path: auth0/creds
+        data:
+          domain: aws/auth0-domain
+          id: aws/auth0-client-id
+          secret: aws/auth0-client-secret
+      - path: cloudflare/creds
+        data:
+          email: aws/cloudflare-api-email
+          key: aws/cloudflare-api-key
+  pki:
+    root:
+      mount: pki
+      name: gilman.io
+      config:
+        ttl: 87600h
+    int:
+      mount: pki_int
+      name: gilman.io intermediate
+      config:
+        ttl: 43800h
+    roles:
+      consul:
+        mount: "{{ vault.engines.pki.int.mount }}"
+        config:
+          allowed_domains: 
+            - "{{ consul.config.datacenter }}.consul"
+            - "{{ network.dns.domain }}"
+          allow_subdomains: true
+          max_ttl: 2160h
+      nomad:
+        mount: "{{ vault.engines.pki.int.mount }}"
+        config:
+          allowed_domains: 
+            - "{{ nomad.config.region }}.nomad"
+            - "{{ network.dns.domain }}"
+          allow_subdomains: true
+          max_ttl: 2160h
+  ssh:
+    mount: ssh
+    key_type: ed25519
+    roles:
+      default:
+        allow_user_certificates: true
+        allowed_users: "*"
+        allowed_extensions: permit-pty,permit-port-forwarding
+        default_extensions:
+          - permit-pty: ""
+        key_type: ca
+        default_user: admin
+        ttl: 18h0m0s
+  transit:
+    mount: transit
+    keys:
+      minio:
+        exportable: true 
+        allow_plaintext_backup: true
+policies:
+  admin:
+    - path: auth/*
+      capabilities: ["create", "read", "update", "delete", "list", "sudo"]
+    - path: "{{ vault.engines.pki.root.mount }}/*"
+      capabilities: ["create", "read", "update", "delete", "list", "sudo"]
+    - path: "{{ vault.engines.pki.int.mount }}/*"
+      capabilities: ["create", "read", "update", "delete", "list", "sudo"]
+    - path: secret/*
+      capabilities: ["create", "read", "update", "delete", "list", "sudo"]
+    - path: ssh/*
+      capabilities: ["create", "read", "update", "delete", "list", "sudo"]
+    - path: sys/auth
+      capabilities: ["read", "list"]
+    - path: sys/auth/*
+      capabilities: ["create", "update", "delete", "sudo"]
+    - path: sys/health
+      capabilities: ["read", "sudo"]
+    - path: sys/leases/*
+      capabilities: ["create", "read", "update", "delete", "list", "sudo"]
+    - path: sys/mounts
+      capabilities: ["read"]
+    - path: sys/mounts/*
+      capabilities: ["create", "read", "update", "delete", "list", "sudo"]
+    - path: sys/policies/acl
+      capabilities: ["read","list"]
+    - path: sys/policies/acl/*
+      capabilities: ["create", "read", "update", "delete", "list", "sudo"]
+    - path: transit/*
+      capabilities: ["create", "read", "update", "delete", "list", "sudo"]

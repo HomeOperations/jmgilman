@@ -1,0 +1,14 @@
+- name: Write unseal key
+  community.aws.aws_ssm_parameter_store:
+    name: vault-unseal-key
+    description: Unseal key for Vault
+    value: "{{ data.keys_base64[0] }}"
+    string_type: "SecureString"
+    key_id: "alias/Lab"
+- name: Write root key
+  community.aws.aws_ssm_parameter_store:
+    name: vault-root-token
+    description: Root token for Vault
+    value: "{{ data.root_token }}"
+    string_type: "SecureString"
+    key_id: "alias/Lab"

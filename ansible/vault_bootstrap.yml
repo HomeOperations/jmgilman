@@ -1,0 +1,10 @@
+---
+- name: Bootstrap Vault
+  hosts: localhost
+  roles:
+    - vault
+  vars:
+    tasks:
+      write_init: tasks/write_init.yml
+    unseal_key: "{{ lookup('aws_ssm', 'vault-unseal-key') }}"
+    vault: "{{ lookup('community.general.consul_kv', 'config/vault') | from_json | convert_secrets }}"

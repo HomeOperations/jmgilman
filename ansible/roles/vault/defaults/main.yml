@@ -15,6 +15,15 @@ agent:
       role: /opt/autoauth/role_id
       secret: /opt/autoauth/secret_id
       token: /opt/autoauth/token
+engines:
+  secrets:
+    enabled: true
+    import: false
+    secrets: []
 pki:
   roles: []
 policies: []
+tasks:
+  write_init:
+token:
+unseal_key:

@@ -1,0 +1,67 @@
+version: '3'
+services:
+    ca:
+        container_name: ca
+        build: containers/ca
+        volumes: 
+            - certs-consul:/ca/consul
+            - certs-control:/ca/control
+            - certs-minio:/ca/minio
+            - certs-vault:/ca/vault
+    consul:
+        container_name: consul
+        image: consul
+        command: agent -server -encrypt "${CONSUL_ENC_KEY}"
+        environment: 
+            - CONSUL_BIND_INTERFACE=eth0
+            - CONSUL_CLIENT_INTERFACE=eth0
+            - |
+                CONSUL_LOCAL_CONFIG={"acl": { "tokens": {"master": "${CONSUL_MASTER_TOKEN}", "agent": "${CONSUL_MASTER_TOKEN}"} } }
+        ports:
+            - 8500:8500
+        volumes:
+            - certs-consul:/consul/config/certs
+            - ./configs/consul.hcl:/consul/config/consul.hcl
+        depends_on: 
+            - ca
+    minio:
+        container_name: minio
+        build: containers/minio
+        command: --certs-dir /etc/minio.d/certs gateway nas /data
+        environment: 
+            - MINIO_ROOT_USER
+            - MINIO_ROOT_PASSWORD
+        ports:
+            - 9000:9000
+        volumes:
+             - certs-minio:/etc/minio.d/certs
+             - nfs:/data
+        depends_on:
+            - ca
+    vault:
+        container_name: vault
+        image: vault
+        command: server
+        ports:
+            - 8200:8200
+        volumes:
+            - certs-vault:/vault/config/certs
+            - ./configs/vault.hcl:/vault/config/vault.hcl
+        environment: 
+            - VAULT_API_ADDR=https://vault:8200
+            - CONSUL_HTTP_TOKEN=${CONSUL_MASTER_TOKEN}
+        cap_add: 
+            - IPC_LOCK
+        depends_on: 
+            - consul
+volumes:
+    certs-consul:
+    certs-control:
+    certs-minio:
+    certs-vault:
+    nfs:
+        driver: local
+        driver_opts:
+            type: nfs
+            o: addr=192.168.3.10
+            device: :/volume2/Minio

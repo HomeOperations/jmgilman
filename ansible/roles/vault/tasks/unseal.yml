@@ -1,0 +1,7 @@
+- name: Get Vault status
+  hashivault_status:
+  register: status_result
+- name: Unseal Vault
+  hashivault_unseal:
+    keys: "{{ unseal_key }}"
+  when: status_result.status.sealed and status_result.status.initialized

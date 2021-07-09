@@ -1,5 +1,31 @@
 ---
-- name: Configure PKI endpoint
-  import_tasks: pki.yml
-- name: Configure policies
-  import_tasks: policy.yml
+# Initialize and unseal if needed
+- name: Initialize Vault
+  import_tasks: init.yml
+  tags: init
+- name: Unseal Vault
+  import_tasks: unseal.yml
+
+# Validate Vault status
+- name: Get Vault status
+  hashivault_status:
+  register: status_result
+- set_fact:
+    vault_available: "{{ not status_result.status.sealed and status_result.status.initialized }}"
+
+- block:
+  - name: Configure KV engine
+    import_tasks: kv.yml
+  - name: Configure OIDC auth backend
+    import_tasks: oidc.yml
+  - name: Create groups
+    import_tasks: groups.yml
+  - name: Create policies
+    import_tasks: policy.yml
+  - name: Create PKI infrastructure
+    import_tasks: pki.yml
+  - name: Create SSH infrastructure
+    import_tasks: ssh.yml
+  - name: Create transit infrastructure
+    import_tasks: transit.yml
+  when: vault_available

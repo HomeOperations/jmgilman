@@ -1,0 +1,12 @@
+- name: Check if transit key exists
+  hashivault_read:
+    mount_point: "{{ vault.engines.transit.mount }}"
+    secret: "keys/{{ item.key }}"
+  ignore_errors: true
+  register: key_read
+- name: Generate transit key
+  hashivault_write:
+    mount_point: "{{ vault.engines.transit.mount }}"
+    secret: "keys/{{ item.key }}"
+    data: "{{ item.value }}"
+  when: key_read.rc != 0

@@ -1,0 +1,44 @@
+---
+- name: Enable SSH backend
+  hashivault_secret_engine:
+    name: "{{ vault.engines.ssh.mount }}"
+    backend: ssh
+- name: Check if SSH signing key has been generated
+  hashivault_read:
+    mount_point: "{{ vault.engines.ssh.mount }}"
+    secret: config/ca
+  ignore_errors: true
+  register: key_read
+- block:
+    - name: Generate SSH signing key pair
+      ansible.builtin.shell: "ssh-keygen -C ca -t {{ vault.engines.ssh.key_type }} -f ca -N ''"
+      args:
+        chdir: /tmp
+    - name: Read SSH signing key pair
+      ansible.builtin.slurp:
+        src: "{{ item }}"
+      register: keypair
+      with_items:
+        - /tmp/ca
+        - /tmp/ca.pub
+    - name: Import SSH signing key pair
+      hashivault_write:
+        mount_point: "{{ vault.engines.ssh.mount }}"
+        secret: config/ca
+        data:
+          private_key: "{{ keypair.results[0].content | b64decode }}"
+          public_key: "{{ keypair.results[1].content | b64decode }}"
+    - name: Cleanup key pair
+      ansible.builtin.file:
+        state: absent
+        path: "{{ item }}"
+      with_items:
+        - /tmp/ca
+        - /tmp/ca.pub
+  when: key_read.rc != 0
+- name: Create signing roles
+  hashivault_write:
+    mount_point: "{{ vault.engines.ssh.mount }}"
+    secret: "roles/{{ item.key }}"
+    data: "{{ item.value }}"
+  with_dict: "{{ vault.engines.ssh.roles }}"

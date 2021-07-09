@@ -1,19 +1,22 @@
 # Don't let the script continue with errors
 $ErrorActionPreference = 'Stop'
 
-$CONFIG = Import-PowerShellDataFile (Join-Path $PSScriptRoot 'config.psd1')
+$REPO = 'https://github.com/netbootxyz/netboot.xyz'
+$NAS_ADDR = 'nas.gilman.io'
+$NAS_PXE = '/volume1/pxe'
+$NAS_TFTP = '/volume1/tftp'
 
 # Create temporary directory
 $temp_dir = New-Item -ItemType Directory -Path (Join-Path 'Temp:/' (New-Guid))
 
 # Clone repository
-$git_args = @('clone', $CONFIG.netboot.repo, $temp_dir.FullName)
+$git_args = @('clone', $REPO, $temp_dir.FullName)
 Start-Process 'git' -ArgumentList $git_args -PassThru -Wait
 
 # Copy overrides
 New-Item -ItemType Directory -Path (Join-Path $temp_dir.FullName 'custom')
-Copy-Item (Join-Path $PSScriptRoot 'pxe/user_overrides.yml') $temp_dir.FullName
-Copy-Item (Join-Path $PSScriptRoot 'pxe/custom/*') (Join-Path $temp_dir.FullName 'custom')
+Copy-Item (Join-Path $PSScriptRoot 'user_overrides.yml') $temp_dir.FullName
+Copy-Item (Join-Path $PSScriptRoot 'custom/*') (Join-Path $temp_dir.FullName 'custom')
 
 # Build docker image
 $docker_build_args = @(
@@ -38,13 +41,13 @@ $docker_run_args = @(
 Start-Process 'docker' -ArgumentList $docker_run_args -Wait
 
 # Copy generated files
-$nas_pxe_path = $CONFIG.nas.address + ':' + $CONFIG.nas.pxe_path
-$nas_tftp_path = $CONFIG.nas.address + ':' + $CONFIG.nas.tftp_path
+$nas_pxe_path = $NAS_ADDR + ':' + $NAS_PXE
+$nas_tftp_path = $NAS_ADDR + ':' + $NAS_TFTP
 
 $buildout_path = Join-Path $temp_dir.FullName 'buildout/*'
 $custom_path = Join-Path $temp_dir.FullName 'buildout/custom'
 $ipxe_path = Join-Path $temp_dir.FullName 'buildout/ipxe/*'
-$esxi_path = Join-Path $PSScriptRoot 'pxe/esxi'
+$esxi_path = Join-Path $PSScriptRoot 'esxi'
 
 & scp $buildout_path $nas_pxe_path
 & scp -r $custom_path $nas_pxe_path

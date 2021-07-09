@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "backup"
+version = "0.1.0"
+description = "Peforms an encrypted backup of a Consul cluster to a Minio bucket"
+authors = ["Joshua Gilman"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+python-consul2 = "^0.1.5"
+boto3 = "^1.17.108"
+cryptography = "^3.4.7"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

@@ -1,0 +1,16 @@
+- name: Get Vault status
+  hashivault_status:
+  register: status_result
+- name: Initialize Vault
+  block:
+    - name: Initialize vault
+      hashivault_init:
+        secret_shares: 1
+        secret_threshold: 1
+      register: init_result
+    - name: Save initialization data
+      include_tasks: "{{ tasks.write_init }}"
+      vars:
+        data: "{{ init_result }}"
+      when: tasks.write_init is defined
+  when: not status_result.status.initialized

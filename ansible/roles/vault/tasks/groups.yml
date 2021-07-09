@@ -1,0 +1,11 @@
+---
+- name: Create groups
+  hashivault_identity_group:
+    name: "{{ item.key }}"
+    group_type: "{{ item.value.type }}"
+    policies: "{{ item.value.policies }}"
+  with_dict: "{{ vault.auth.groups }}"
+
+- name: Create group aliases
+  include_tasks: group_alias.yml
+  with_dict: "{{ vault.auth.groups_alias }}"

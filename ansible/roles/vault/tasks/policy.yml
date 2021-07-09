@@ -1,6 +1,8 @@
 ---
 - name: Create policies
   hashivault_policy:
-    name: "{{ item }}"
-    rules_file: "roles/vault/files/policies/{{ item }}.hcl"
-  with_items: "{{ policies }}"
+    name: "{{ item.key }}"
+    rules: "{{ lookup('template', 'templates/policy.j2') }}"
+  vars:
+    policies: "{{ item.value }}"
+  with_dict: "{{ vault.policies }}"
