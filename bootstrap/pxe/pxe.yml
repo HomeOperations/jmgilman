@@ -1,0 +1,67 @@
+---
+- name: Build PXE configuration
+  hosts: localhost
+  vars:
+    repo: https://github.com/netbootxyz/netboot.xyz
+  tasks:
+    - name: Create temporary build directory
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: build
+      register: build_dir
+    - debug: var=build_dir
+    - name: Clone netboot.xyz repository
+      ansible.builtin.git:
+        repo: "{{ repo }}"
+        dest: "{{ build_dir.path }}"
+    - name: Copy override file
+      ansible.builtin.copy:
+        src: user_overrides.yml
+        dest: "{{ build_dir.path }}"
+    - name: Copy custom menu folder
+      ansible.builtin.copy:
+        src: custom
+        dest: "{{ build_dir.path }}"
+    - name: Build netboot.xyz Docker image
+      community.docker.docker_image:
+        name: localbuild
+        build:
+          path: "{{ build_dir.path }}"
+          dockerfile: "{{ (build_dir.path, 'Dockerfile-build') | path_join }}"
+        source: build
+    - name: Build netboot.xyz files
+      community.docker.docker_container:
+        name: localbuild
+        image: localbuild
+        container_default_behavior: no_defaults
+        auto_remove: true
+        detach: false
+        interactive: yes
+        tty: yes
+        mounts:
+          - source: "{{ build_dir.path }}"
+            target: /buildout
+            type: bind
+
+- name: Copy PXE configuration
+  hosts: all
+  vars:
+    paths:
+      pxe: /volume1/pxe
+      tftp: /volume1/tftp
+  tasks:
+    - set_fact:
+        build_dir: "{{ hostvars['localhost']['build_dir'] }}"
+    - name: Copy bootloaders
+      ansible.builtin.copy:
+        src: "{{ (build_dir.path, 'buildout/ipxe/') | path_join }}"
+        dest: "{{ paths.tftp }}"
+    - name: Remove bootloaders
+      ansible.builtin.file:
+        path: "{{ (build_dir.path, 'buildout/ipxe/') | path_join }}"
+        state: absent
+      delegate_to: localhost
+    - name: Copy remaining iPXE files
+      ansible.builtin.copy:
+        src: "{{ (build_dir.path, 'buildout/') | path_join }}"
+        dest: "{{ paths.pxe }}"

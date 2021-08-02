@@ -38,6 +38,7 @@ auth:
           - http://localhost:8250/oidc/callback
         token_policies:
           - default
+          - admin
         user_claim: sub
 engines:
   kv:
@@ -52,6 +53,22 @@ engines:
         data:
           email: aws/cloudflare-api-email
           key: aws/cloudflare-api-key
+      - path: minio/creds
+        data:
+          username: aws/minio-access-key
+          password: aws/minio-secret-key
+      - path: linux/creds
+        data:
+          username: admin
+          password: aws/linux-admin-pass
+      - path: ssh/rpi
+        data:
+          public: aws/rpi-pub-key
+          private: aws/rpi-priv-key
+      - path: ssh/nas
+        data:
+          public: aws/nas-pub-key
+          private: aws/nas-priv-key
   pki:
     root:
       mount: pki

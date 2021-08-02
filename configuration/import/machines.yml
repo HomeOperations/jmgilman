@@ -1,5 +1,3 @@
-import_path: machines
-
 hashi:
   hashi01:
     consul:
@@ -31,6 +29,36 @@ hashi:
       ip: 192.168.1.113
       netmask: 24
       gateway: 192.168.1.1
+flatcar:
+  tinker:
+    bootstrap:
+      ssh:
+        private_key: vault/ssh/rpi:private
+        public_key: vault/ssh/rpi:public
+    system:
+      user:
+        username: vault/linux/creds:username
+        password: vault/linux/creds:password
+    networking:
+      network: Prod
+      ip: 192.168.1.100
+      netmask: 24
+      gateway: 192.168.1.1
+      dns: "{{ network.dns.server }}"
+      domain: "{{ network.dns.domain }}"
+  vault-seal:
+    networking:
+      network: Prod
+      ip: 192.168.1.101
+      netmask: 24
+      gateway: 192.168.1.1
+storage:
+  nas:
+    networking:
+      network: Storage
+      ip: 192.168.3.10
+      netmask: 24
+      gateway: 192.168.3.1
 workers:
   worker01:
     consul:

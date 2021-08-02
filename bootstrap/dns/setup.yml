@@ -1,0 +1,14 @@
+---
+- name: Configure DNS entries
+  hosts: localhost
+  vars_files:
+    - ../../configuration/import/network.yml
+  tasks:
+    - name: Create A records
+      community.general.cloudflare_dns:
+        zone: "{{ dns.domain }}"
+        record: "{{ item.key }}"
+        type: A
+        value: "{{ item.value }}"
+        api_token: "{{ lookup('env', 'CLOUDFLARE_TOKEN')}}"
+      with_dict: "{{ entries | b64decode | from_json }}"

@@ -1,0 +1,11 @@
+Vagrant.configure("2") do |config|
+    config.vm.box = "generic/ubuntu2004"
+    config.vm.synced_folder "./", "/vagrant", disabled: false
+    config.vm.provision "ansible" do |ansible|
+        ansible.playbook = "setup.yml"
+        ansible.extra_vars = {
+            LINUX_ADMIN_PASS: ENV['LINUX_ADMIN_PASS'], 
+            RPI_SSH_PUB_KEY: ENV['RPI_SSH_PUB_KEY']
+        }
+      end
+  end

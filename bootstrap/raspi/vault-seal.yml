@@ -1,0 +1,85 @@
+---
+- name: Configure Vault unsealing server
+  hosts: localhost
+  become: yes
+  vars:
+    config: "{{ MACHINE_CONFIG | b64decode | from_json }}"
+    dns: "{{ DNS | b64decode | from_json }}"
+  tasks:
+    - name: Change hostname
+      copy:
+        content: vault-seal
+        dest: /etc/hostname
+    - name: Create admin user
+      user:
+        name: admin
+        groups:
+          - admin
+          - sudo
+        update_password: always
+        password: "{{ LINUX_ADMIN_PASSWORD | password_hash('sha512') }}"
+    - name: Enable passwordless sudo
+      lineinfile:
+        path: /etc/sudoers
+        state: present
+        regexp: '^%sudo'
+        line: '%sudo ALL=(ALL) NOPASSWD: ALL'
+        validate: 'visudo -cf %s'
+    - name: Create SSH folder
+      become_user: admin
+      file:
+        path: /home/admin/.ssh
+        state: directory
+        mode: 0700
+    - name: Write SSH key
+      become_user: admin
+      copy:
+        content: "{{ RPI_SSH_PUB_KEY | b64decode }}"
+        dest: /home/admin/.ssh/authorized_keys
+        mode: 0600
+    - name: Install base packages
+      apt:
+        name:
+          - unzip
+          - wget
+    - name: Install GRUB
+      apt:
+        name:
+          - grub2-common
+          - efivar
+          - grub-efi-arm64
+    - name: Generate GRUB config
+      shell: update-grub
+    - name: Disable cloud-init network configurations
+      copy:
+        content: "network: {config: disabled}"
+        dest: /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+    - name: Disable cloud-init default user
+      lineinfile:
+        path: /etc/cloud/cloud.cfg
+        state: present
+        regexp: '^   - default'
+        line: '#   - default'
+    - name: Disable cloud-init hostname change
+      lineinfile:
+        path: /etc/cloud/cloud.cfg
+        state: present
+        regexp: '^preserve_hostname: false'
+        line: 'preserve_hostname: true'
+    - name: Write netplan configuration
+      copy:
+        content: "{{ netplan | to_yaml }}"
+        dest: /etc/netplan/01-netcfg.yaml
+      vars:
+        netplan:
+          network:
+            version: 2
+            renderer: networkd
+            ethernets:
+                eth0:
+                    addresses:
+                        - "{{ config.networking.ip }}/{{ config.networking.netmask }}"
+                    gateway4: "{{ config.networking.gateway }}"
+                    nameservers:
+                        search: ["{{ dns.domain }}"]
+                        addresses: ["{{ dns.server }}"]

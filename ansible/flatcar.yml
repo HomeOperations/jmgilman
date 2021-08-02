@@ -1,0 +1,85 @@
+---
+- name: Generate Flatcar Linux image
+  hosts: localhost
+  vars:
+    image:
+      url: https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_image.bin.bz2
+      digests: https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_image.bin.bz2.DIGESTS
+      partitions:
+        oem: 6
+    machines: "{{ lookup('community.general.consul_kv', 'config/machines') | from_json | convert_secrets }}"
+    oem_dir: /mnt/oem
+  tasks:
+    - name: Download digests
+      ansible.builtin.uri:
+        url: "{{ image.digests }}"
+        return_content: yes
+      register: digests
+    - name: Download image
+      ansible.builtin.get_url:
+        url: "{{ image.url }}"
+        dest: "/tmp/{{ name }}.img.bz2"
+        checksum: "sha512:{{ ((digests.content | split('\n'))[23] | split(' '))[0] }}"
+    - name: Decompress image
+      ansible.builtin.shell: "bunzip2 /tmp/{{ name }}.img.bz2"
+    - name: Read image partition table
+      community.general.parted: "device=/tmp/{{ name }}.img"
+      register: partitions
+    - set_fact:
+        fs_partitions: "{{ partitions | json_query(query) }}"
+      vars:
+        query: partitions[?fstype != ''].num
+    - name: Mount image partitions to loopback
+      ansible.builtin.shell: "kpartx -a -v /tmp/{{ name }}.img"
+      register: loopback
+    - set_fact:
+        loopback_num: "{{ loopback.stdout_lines[0] | regex_search('loop(\\d)p', '\\1') }}"
+    - name: Create local mount folders
+      ansible.builtin.file:
+        path: "/mnt/p{{ item }}"
+        state: directory
+      with_items: "{{ fs_partitions }}"
+    - name: Mount image partitions
+      ansible.builtin.shell: "mount /dev/mapper/loop{{ loopback_num }}p{{ item }} /mnt/p{{ item }}"
+      with_items: "{{ fs_partitions }}"
+    - name: Generate container configuration file
+      ansible.builtin.template:
+        src: flatcar/{{ name }}.yml.j2
+        dest: /tmp/config.yml
+      vars:
+        config: "{{ machines.flatcar[name] }}"
+        nas: "{{ machines.storage.nas }}"
+        ssh_key: "{{ machines.flatcar[name].bootstrap.ssh.public_key | b64decode }}"
+    - name: Compile configuration to ignition
+      ansible.builtin.shell: ct -in-file /tmp/config.yml -out-file /tmp/config.ign
+    - name: Copy ignition configuration to image
+      ansible.builtin.copy:
+        src: /tmp/config.ign
+        dest: "{{ oem_dir }}/config.ign"
+    - name: Delete container configuration file
+      ansible.builtin.file:
+        path: /tmp/config.yml
+        state: absent
+    - name: Delete ignition configuration file
+      ansible.builtin.file:
+        path: /tmp/config.ign
+        state: absent
+    - name: Unmount OEM partition
+      ansible.builtin.shell: "umount {{ oem_dir }}"
+    - name: Unmount loopback
+      ansible.builtin.shell: "kpartx -d /tmp/{{ name }}.img"
+    - name: Compress image
+      ansible.builtin.shell: "bzip2 /tmp/{{ name }}.img"
+
+- name: Copy image to NAS
+  hosts: nas.gilman.io
+  tasks:
+    - name: Copy image to NAS
+      ansible.builtin.copy:
+        src: "/tmp/{{ name }}.img.bz2"
+        dest: "/volume1/pxe/images/flatcar/{{ name }}.img.bz2"
+    - name: Delete local copy of image
+      ansible.builtin.file:
+        path: "/tmp/{{ name }}.img.bz2"
+        state: absent
+      delegate_to: localhost

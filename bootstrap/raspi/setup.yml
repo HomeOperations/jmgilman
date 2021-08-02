@@ -1,0 +1,76 @@
+---
+- name: Configure environment
+  hosts: all
+  become: yes
+  vars:
+    packer_ver: 1.7.3
+    go_ver: 1.14.3
+    packer_arm_ver: 0.1.6
+  vars_files:
+    - ../../configuration/import/machines.yml
+    - ../../configuration/import/network.yml
+  tasks:
+    - name: Update and upgrade system
+      ansible.builtin.apt:
+        update_cache: yes
+        upgrade: yes
+    - name: Install deps
+      ansible.builtin.apt:
+        pkg:
+          - software-properties-common
+          - kpartx
+          - qemu-user-static
+          - git
+          - wget
+          - curl
+          - vim
+          - unzip
+          - gcc
+    - name: Download Packer
+      ansible.builtin.get_url:
+        url: "https://releases.hashicorp.com/packer/{{ packer_ver }}/packer_{{ packer_ver }}_linux_amd64.zip"
+        dest: /tmp/packer.zip
+    - name: Unzip Packer
+      ansible.builtin.unarchive:
+        src: /tmp/packer.zip
+        dest: /usr/bin
+        remote_src: yes
+    - name: Download Go
+      ansible.builtin.get_url:
+        url: https://dl.google.com/go/go{{ go_ver }}.linux-amd64.tar.gz
+        dest: /tmp/go.tar.gz
+    - name: Unarchive Go
+      ansible.builtin.unarchive:
+        src: /tmp/go.tar.gz
+        dest: /usr/local
+        remote_src: yes
+    - name: Clone Packer ARM plugin
+      ansible.builtin.git:
+        repo: https://github.com/solo-io/packer-builder-arm-image
+        dest: /tmp/go/src/github.com/solo-io/packer-builder-arm-image
+    - name: Build Packer ARM plugin
+      ansible.builtin.shell: /usr/local/go/bin/go build
+      args:
+        chdir: /tmp/go/src/github.com/solo-io/packer-builder-arm-image
+      environment:
+        GOROOT: /usr/local/go
+        GOPATH: /tmp/go
+    - name: Copy Packer ARM plugin
+      ansible.builtin.copy:
+        src: /tmp/go/src/github.com/solo-io/packer-builder-arm-image/packer-builder-arm-image
+        dest: /usr/bin
+        mode: +x
+        remote_src: yes
+    - name: Build ARM images
+      ansible.builtin.shell: "packer build {{ item.value }}"
+      args:
+        chdir: /vagrant/
+      environment:
+        LINUX_ADMIN_PASS: "{{ LINUX_ADMIN_PASS }}"
+        RPI_SSH_PUB_KEY: "{{ RPI_SSH_PUB_KEY }}"
+        MACHINE_CONFIG: "{{ raspi[item.key] | to_json | b64encode }}"
+        DNS: "{{ dns | to_json | b64encode }}"
+      register: packer_out
+      with_dict:
+        #tinker: tinker.pkr.hcl
+        vault-seal: vault-seal.pkr.hcl

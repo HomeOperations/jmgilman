@@ -1,0 +1,5 @@
+image:
+  url: https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_image.bin.bz2
+  digests: https://alpha.release.flatcar-linux.net/arm64-usr/current/flatcar_production_image.bin.bz2.DIGESTS
+  partitions:
+    oem: 6
