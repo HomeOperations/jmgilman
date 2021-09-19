@@ -14,6 +14,7 @@
         name: "{{ item.key }}"
         allowed_redirect_uris: "{{ item.value.allowed_redirect_uris }}"
         bound_audiences: "{{ vault.auth.oidc.creds.id }}"
+        token_max_ttl: "{{ item.value.token_max_ttl }}"
         token_policies: "{{ item.value.token_policies }}"
         user_claim: "{{ item.value.user_claim }}"
       with_items: "{{ vault.auth.oidc.roles | dict2items }}"
