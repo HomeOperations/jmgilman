@@ -19,6 +19,7 @@ services:
                 CONSUL_LOCAL_CONFIG={"acl": { "tokens": {"master": "${CONSUL_MASTER_TOKEN}", "agent": "${CONSUL_MASTER_TOKEN}"} } }
         ports:
             - 8500:8500
+            - 8501:8501
         volumes:
             - certs-consul:/consul/config/certs
             - ./configs/consul.hcl:/consul/config/consul.hcl

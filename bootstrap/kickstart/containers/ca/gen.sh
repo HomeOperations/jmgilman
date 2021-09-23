@@ -73,6 +73,9 @@ echo $PASS | step certificate create -f \
                 --ca-password-file /dev/stdin \
                 vault /ca/vault/server.crt /ca/vault/server.key
 
+# Convert control Consul key to PKCS#8
+step crypto key format -f --no-password --insecure --pem --pkcs8 --out /ca/control/consul.key /ca/control/consul.key
+
 # Copy CA public certificate
 cp root_ca.crt /ca/consul/ca.crt
 cp root_ca.crt /ca/control/ca.crt
