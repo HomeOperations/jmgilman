@@ -5,4 +5,10 @@ network:
     nics:
       match:
         name: ens*
-      dhcp4: yes
+      addresses:
+        - ${network.address}
+      gateway4: ${network.gateway}
+      nameservers:
+        - 1.1.1.1
+      search:
+        gilman.io

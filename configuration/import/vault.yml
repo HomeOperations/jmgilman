@@ -36,7 +36,7 @@ auth:
         allowed_redirect_uris: 
           - https://localhost:8200/ui/vault/auth/oidc/oidc/callback
           - http://localhost:8250/oidc/callback
-        token_max_ttl: 12h
+        token_max_ttl: 43200
         token_policies:
           - default
           - admin
@@ -70,6 +70,10 @@ engines:
         data:
           public: aws/nas-pub-key
           private: aws/nas-priv-key
+      - path: vsphere/creds
+        data:
+          username: aws/vsphere-username
+          password: aws/vsphere-password
   pki:
     root:
       mount: pki

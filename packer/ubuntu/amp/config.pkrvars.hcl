@@ -1,5 +1,10 @@
 ansible_playbook = "amp/playbook.yml"
 
+network = {
+    address = "192.168.1.80/24"
+    gateway = "192.168.1.1"
+}
+
 vsphere_server = {
     address = "vcenter.gilman.io"
     insecure = true
@@ -24,5 +29,5 @@ vsphere_vm = {
             thin = true
         }
     ]
-    network = "Dev"
+    network = "Prod"
 }

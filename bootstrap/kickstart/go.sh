@@ -32,6 +32,7 @@ docker run -it \
     -v kickstart_certs-control:/root/certs \
     -v "$LAB_DIR/ansible":/root/ansible \
     -v "$LAB_DIR/configuration":/root/configuration \
+    -v "$LAB_DIR/packer":/root/packer \
     -v "$LAB_DIR/tools":/root/tools \
     -e MC_HOST_minio="https://$MINIO_ROOT_USER:$MINIO_ROOT_PASSWORD@minio:9000" \
     -e CONSUL_HTTP_TOKEN="$CONSUL_MASTER_TOKEN" \

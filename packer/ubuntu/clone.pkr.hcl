@@ -26,6 +26,13 @@ variable "ansible_playbook" {
     type = string
 }
 
+variable "network" {
+    type = object({
+        address = string
+        gateway = string
+    })
+}
+
 variable "vsphere_server" {
     type = object({
         address = string
@@ -82,6 +89,7 @@ source "vsphere-clone" "clone_base" {
       "guestinfo.metadata" = base64encode(templatefile("metadata.yml",
       {
         hostname = var.vsphere_vm.hostname
+        network = var.network
       }
     ))
     "guestinfo.metadata.encoding" = "base64"

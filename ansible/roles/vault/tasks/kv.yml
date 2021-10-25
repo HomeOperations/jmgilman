@@ -4,6 +4,7 @@
     name: secret
     backend: kv-v2
 - name: Import secrets
+  no_log: true
   hashivault_secret:
     secret: "{{ item.path }}"
     data: "{{ item.data }}"
